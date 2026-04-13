@@ -2,6 +2,8 @@
 
 POC project for gait recognition (ST-GCN and related experiments). The main entry point is the Jupyter notebook at the repository root. Dataset download, path resolution, and extraction live in a small Python package so the notebook stays short and imports work from any working directory.
 
+**GitHub:** [github.com/danielsaggir/deep-gait](https://github.com/danielsaggir/deep-gait)
+
 ---
 
 ## Repository layout
