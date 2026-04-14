@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import cv2
 import numpy as np
 import torch
 
@@ -74,6 +73,8 @@ class GaitProcessor:
         path = Path(video_path)
         if not path.is_file():
             raise FileNotFoundError(f"Video not found: {path}")
+
+        import cv2
 
         self._ensure_pose()
         cap = cv2.VideoCapture(str(path))
