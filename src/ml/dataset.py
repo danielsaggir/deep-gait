@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import pickle
 import re
 from pathlib import Path
 
@@ -28,6 +29,12 @@ def _load_array(path: Path) -> np.ndarray:
         if not keys:
             raise ValueError(f"Empty npz: {path}")
         return z[keys[0]]
+    if path.suffix.lower() == ".pkl":
+        with open(path, "rb") as f:
+            o = pickle.load(f)
+        if not isinstance(o, np.ndarray):
+            raise ValueError(f"Expected ndarray in pkl, got {type(o)}: {path}")
+        return o
     raise ValueError(f"Unsupported format: {path}")
 
 
@@ -43,6 +50,10 @@ def _to_ctv(arr: np.ndarray, joints: int, window: int) -> torch.Tensor:
             x = np.transpose(a, (2, 1, 0))
         elif c0 == window and c1 == joints and c2 == 2:
             x = np.transpose(a, (2, 0, 1))
+        elif c1 == joints and c2 == 3:
+            # (T, V, 3) e.g. HRNet x,y,score — use xy only
+            xy = a[:, :, :2]
+            x = np.transpose(xy, (2, 0, 1))
         else:
             # (T, V, C)
             if c2 == 2:
@@ -64,13 +75,13 @@ def _to_ctv(arr: np.ndarray, joints: int, window: int) -> torch.Tensor:
 
 class CasiaPoseDataset(Dataset):
     """
-    Loads ``.npy`` / ``.npz`` files under a root directory (default: CASIA-B processed).
+    Loads ``.npy`` / ``.npz`` / ``.pkl`` under a root directory (default: CASIA-B processed).
 
-    Each file should contain a float array of shape ``(2, T, V)`` or compatible
-    ``(T, V, 2)`` / ``(V, T, 2)``; ``T`` may differ from ``window_size`` (resampled).
+    Arrays: ``(2, T, V)``, or ``(T, V, 2)``, or ``(T, V, 3)`` (xy + extra); ``T`` may
+    differ from ``window_size`` (resampled).
 
-    Labels: integer parsed from ``nm-XXX`` / ``cl-XXX`` in the filename if present,
-    else hash of stem modulo a large prime (for dummy supervision).
+    Labels: ``nm-XXX`` / ``cl-XXX`` in the path; else CASIA-style ``.../CASIA-B_HRNet/<id>/...``;
+    else hash of stem (weak supervision).
     """
 
     _label_re = re.compile(r"(?:nm|cl)-(\d+)", re.I)
@@ -92,19 +103,26 @@ class CasiaPoseDataset(Dataset):
         self.window_size = window_size
         self.joints = joints
         self.paths: list[Path] = []
-        for pat in ("**/*.npy", "**/*.npz"):
+        for pat in ("**/*.npy", "**/*.npz", "**/*.pkl"):
             self.paths.extend(sorted(self.root.glob(pat)))
         self.paths = sorted(set(self.paths))
         if not self.paths:
-            logger.warning("No .npy/.npz files under %s", self.root)
+            logger.warning("No .npy/.npz/.pkl files under %s", self.root)
 
     def __len__(self) -> int:
         return len(self.paths)
 
     def _label_from_path(self, p: Path) -> int:
-        m = self._label_re.search(p.as_posix())
+        s = p.as_posix()
+        m = self._label_re.search(s)
         if m:
             return int(m.group(1))
+        parts = p.parts
+        for i, part in enumerate(parts):
+            if part == "CASIA-B_HRNet" and i + 1 < len(parts):
+                nxt = parts[i + 1]
+                if nxt.isdigit():
+                    return int(nxt)
         return hash(p.stem) % 100_003
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
