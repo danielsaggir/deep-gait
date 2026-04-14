@@ -146,7 +146,20 @@ mongoose
       },
       "loads saved weights for inference only (training is never started by this server)"
     );
-    app.listen(port, () => log.info({ port }, "DeepGait API listening"));
+    const server = app.listen(port, () =>
+      log.info({ port }, "DeepGait API listening")
+    );
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        log.error(
+          { port, err },
+          "Port already in use — another Deep Gait API (or other app) is listening. Stop it, or set PORT in webapp/server/.env (e.g. PORT=3002)."
+        );
+      } else {
+        log.error(err);
+      }
+      process.exit(1);
+    });
   })
   .catch((err) => {
     log.error(err);

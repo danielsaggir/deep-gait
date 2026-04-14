@@ -38,7 +38,8 @@ Deep Gait/
 ├── models/                  # Put checkpoints here (e.g. checkpoint.pth; gitignored)
 ├── tests/                   # pytest smoke tests
 ├── scripts/
-│   └── run-all.sh           # Mongo (Docker) + API + Vite — see “Run everything (local)”
+│   ├── run-all.sh           # Mongo (Docker) + API + Vite — see “Run everything (local)”
+│   └── free-api-port.sh     # Used by `npm run dev:all` to clear the API port (see below)
 └── webapp/
     ├── server/              # Express API, uploads/, MongoDB, spawns Python inference
     └── client/              # Vite + React dashboard
@@ -128,9 +129,11 @@ What it does:
 |------|----------|
 | MongoDB | If nothing is listening on `127.0.0.1:27017`, the script starts (or reuses) a Docker container named `deepgait-mongo` (`mongo:7`). If you already run MongoDB yourself, it skips Docker. |
 | Remote DB | If you use Atlas or another host, set `MONGODB_URI` in `.env` and run with `SKIP_MONGO_DOCKER=1 npm run run:all` so the script does not try to start Docker. |
-| Processes | Runs `npm run dev:all`, which starts **server** and **client** in parallel; **Ctrl+C** stops both (`concurrently -k`). |
+| Processes | Runs `npm run dev:all`, which clears the **API port** (see below), then starts **server** and **client** in parallel; **Ctrl+C** stops both (`concurrently -k`). |
 
 Equivalent manual steps: start Mongo, then `npm run start:server` in one terminal and `npm run dev:client` in another. To run only the two Node processes without the Mongo helper (Mongo already running): `npm run dev:all`.
+
+**API port in use (`EADDRINUSE`):** `npm run dev:all` / `npm run run:all` runs [`scripts/free-api-port.sh`](scripts/free-api-port.sh) first: it reads `PORT` from `webapp/server/.env` (default **3001**) and stops any process **listening** on that port so a leftover API from an earlier session does not block startup. To skip that (e.g. another app must keep the port), run `SKIP_FREE_API_PORT=1 npm run dev:all`. If you use a non-default API port, set `PORT` in `.env` and point the dev proxy at the same port in [`webapp/client/vite.config.js`](webapp/client/vite.config.js) (`proxy["/api"].target`). Running **`npm run start:server` alone** does not run the free-port step; free it manually if needed (`lsof -iTCP:3001 -sTCP:LISTEN`, then `kill`).
 
 ---
 
