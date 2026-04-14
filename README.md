@@ -37,6 +37,8 @@ Deep Gait/
 ├── deep_gait/               # CASIA helpers only (`dataset.py` + `__init__.py`)
 ├── models/                  # Put checkpoints here (e.g. checkpoint.pth; gitignored)
 ├── tests/                   # pytest smoke tests
+├── scripts/
+│   └── run-all.sh           # Mongo (Docker) + API + Vite — see “Run everything (local)”
 └── webapp/
     ├── server/              # Express API, uploads/, MongoDB, spawns Python inference
     └── client/              # Vite + React dashboard
@@ -109,6 +111,26 @@ Deep Gait/
    ```
 
    Open the printed URL (Vite proxies `/api` to port 3001).
+
+### Run everything (local)
+
+Use this when you want **one command** for the full stack: ensure MongoDB is up, then run the **Express API** and **Vite client** together (with labeled, merged logs). Training is **not** started; inference uses `CHECKPOINT_PATH` in `webapp/server/.env` as usual.
+
+From the repo root (after `npm install` and a configured `webapp/server/.env`):
+
+```bash
+npm run run:all
+```
+
+What it does:
+
+| Step | Behavior |
+|------|----------|
+| MongoDB | If nothing is listening on `127.0.0.1:27017`, the script starts (or reuses) a Docker container named `deepgait-mongo` (`mongo:7`). If you already run MongoDB yourself, it skips Docker. |
+| Remote DB | If you use Atlas or another host, set `MONGODB_URI` in `.env` and run with `SKIP_MONGO_DOCKER=1 npm run run:all` so the script does not try to start Docker. |
+| Processes | Runs `npm run dev:all`, which starts **server** and **client** in parallel; **Ctrl+C** stops both (`concurrently -k`). |
+
+Equivalent manual steps: start Mongo, then `npm run start:server` in one terminal and `npm run dev:client` in another. To run only the two Node processes without the Mongo helper (Mongo already running): `npm run dev:all`.
 
 ---
 
