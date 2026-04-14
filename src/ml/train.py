@@ -44,7 +44,7 @@ def main() -> None:
     joints = int(cfg.get("joints", 17))
     window = int(cfg.get("window_size", 64))
     emb = int(cfg.get("embedding_dim", 128))
-    num_classes = int(cfg.get("num_train_classes", 100))
+    cfg_classes = int(cfg.get("num_train_classes", 100))
 
     ds = CasiaPoseDataset(
         root=args.data_root,
@@ -53,6 +53,7 @@ def main() -> None:
     )
     if len(ds) == 0:
         logger.warning("Empty dataset — generating dummy batch for smoke train")
+        num_classes = cfg_classes
         dummy_x = torch.randn(4, 2, window, joints)
         dummy_y = torch.randint(0, num_classes, (4,))
 
@@ -78,6 +79,16 @@ def main() -> None:
         logger.info("Saved %s", args.save)
         return
 
+    max_label = max(ds._label_from_path(p) for p in ds.paths)
+    num_classes = max(cfg_classes, max_label + 1)
+    if num_classes > cfg_classes:
+        logger.info(
+            "num_train_classes raised from config %d to %d (max label in data=%d)",
+            cfg_classes,
+            num_classes,
+            max_label,
+        )
+
     loader = DataLoader(
         ds,
         batch_size=args.batch_size,
@@ -100,7 +111,7 @@ def main() -> None:
         model.train()
         for batch_x, batch_y in loader:
             batch_x = batch_x.to(device)
-            batch_y = batch_y.to(device) % num_classes
+            batch_y = batch_y.to(device)
             opt.zero_grad()
             z = model(batch_x)
             logits = head(z)

@@ -11,5 +11,5 @@ checkpoint_path: models/checkpoint.pth
 # BlazePose / MediaPipe
 visibility_threshold: 0.5
 
-# Training (train.py) — adjust for your identity labels
+# Training (train.py) — minimum class count; auto-raised from filenames if needed
 num_train_classes: 100
