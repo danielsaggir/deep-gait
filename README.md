@@ -1,8 +1,17 @@
 # Deep Gait
 
-POC project for gait recognition (ST-GCN and related experiments). The main entry point is the Jupyter notebook at the repository root. Dataset download, path resolution, and extraction live in a small Python package so the notebook stays short and imports work from any working directory.
+Gait recognition starter: **ST-GCN** (128-D embeddings), **MediaPipe/BlazePose** pose extraction, **CASIA-B** path helpers, a **Python inference CLI** for Node, and a **React + Express + MongoDB** web dashboard for uploads and similarity search.
 
 **GitHub:** [github.com/danielsaggir/deep-gait](https://github.com/danielsaggir/deep-gait)
+
+---
+
+## Infrastructure split
+
+| Where | Role |
+|-------|------|
+| **University Jupyter Server** | Heavy **training** (`python -m ml.train`, notebooks, CASIA data, GPU). Save checkpoints (e.g. `models/checkpoint.pth`) and copy or sync them to your machine. |
+| **Local machine** | **Web app** (Node + React + MongoDB) and **inference** only (`python -m ml.inference`). |
 
 ---
 
@@ -10,92 +19,144 @@ POC project for gait recognition (ST-GCN and related experiments). The main entr
 
 ```text
 Deep Gait/
-├── DeepGait.ipynb          # Main notebook (model code + dataset cells at the top)
-├── README.md               # This file
-├── pyproject.toml          # Package metadata and dependencies (deep-gait, gdown)
-├── requirements.txt        # Editable install: pip install -r requirements.txt → installs -e .
-├── .gitignore              # Ignores venv, bytecode, large data, build metadata
-│
-├── deep_gait/              # Installable Python package (pip install -e .)
-│   ├── __init__.py         # Re-exports public dataset helpers
-│   └── dataset.py          # Colab/Drive, gdown download, paths, tar extract
-│
-└── data/                   # Local data (not committed; see .gitignore)
-    ├── raw/                # CASIA-B_HRNet.tar (or other raw archives)
-    └── processed/          # Extracted dataset (e.g. casia_b_hrnet/…)
+├── config.yaml              # window_size, joints, embedding_dim, checkpoint path hints
+├── package.json             # npm workspaces (webapp/server + webapp/client)
+├── pyproject.toml           # deep_gait + ml packages; optional extras [inference], [train], [dev]
+├── requirements.txt         # pip install -r → editable install + inference deps
+├── data/
+│   ├── raw/                 # CASIA .tar (gitignored); .gitkeep keeps the folder
+│   └── processed/           # extracted data (gitignored)
+├── notebooks/
+│   └── DeepGait.ipynb       # Original Colab-style walkthrough
+├── src/ml/                  # Production / research ML code
+│   ├── model.py             # STGCN → 128-D
+│   ├── processor.py         # GaitProcessor (video → tensor)
+│   ├── dataset.py           # CasiaPoseDataset (.npy / .npz)
+│   ├── inference.py         # CLI JSON signature (for Express bridge)
+│   └── train.py             # Minimal training (Jupyter-oriented)
+├── deep_gait/               # CASIA helpers only (`dataset.py` + `__init__.py`)
+├── models/                  # Put checkpoints here (e.g. checkpoint.pth; gitignored)
+├── tests/                   # pytest smoke tests
+└── webapp/
+    ├── server/              # Express API, uploads/, MongoDB, spawns Python inference
+    └── client/              # Vite + React dashboard
 ```
 
-After you run `pip install -e .`, setuptools also creates **`deep_gait.egg-info/`** next to `pyproject.toml`. That folder is build metadata; it can be regenerated and is listed in `.gitignore`.
-
 ---
 
-## What each piece is for
+## Python setup
 
-| Path | Purpose |
-|------|--------|
-| [`DeepGait.ipynb`](DeepGait.ipynb) | Walkthrough: mount Drive (Colab), download CASIA archive (local), extract, then ST-GCN / PyTorch sections. |
-| [`deep_gait/dataset.py`](deep_gait/dataset.py) | **Single source of truth** for archive filename, Google Drive defaults, `data/raw` vs `data/processed`, Colab mounted path, and `gdown` logic. |
-| [`deep_gait/__init__.py`](deep_gait/__init__.py) | Lets you `from deep_gait import …` for the same functions as `deep_gait.dataset`. |
-| [`pyproject.toml`](pyproject.toml) | Declares the `deep-gait` package and dependency on `gdown`. |
-| [`requirements.txt`](requirements.txt) | `-e .` installs the project in editable mode and pulls dependencies from `pyproject.toml`. |
-| `data/raw/` | Holds the **`.tar`** from Google Drive (large; gitignored). |
-| `data/processed/casia_b_hrnet/` | **Extracted** tree (`tar.extractall` target; gitignored). The archive usually contains a top-level `CASIA-B_HRNet/` directory. |
-
----
-
-## First-time setup (new developers)
-
-1. **Python 3.10+** recommended (see `pyproject.toml`).
-
-2. **Create and activate a virtual environment** (from the project root, the folder that contains `pyproject.toml`):
+1. **Python 3.10+** and a virtual environment:
 
    ```bash
    cd "/path/to/Deep Gait"
    python3 -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
+   source .venv/bin/activate
    ```
 
-3. **Install the project in editable mode** (installs `gdown` and registers `deep_gait`):
+2. **Install** (local inference + web bridge):
 
    ```bash
    pip install -r requirements.txt
-   # equivalent: pip install -e .
    ```
 
-4. **Open the notebook** in Cursor/VS Code or Jupyter and select the **interpreter** from `.venv`. Then run the first dataset cells in order:
-   - `mount_google_drive_if_colab()` (no-op locally)
-   - `download_casia_if_local()` (skips if the archive already exists)
-   - `extract_casia_archive()`
+   This installs `deep-gait` in editable mode with **`[inference]`** extras (PyTorch, OpenCV, MediaPipe).
+
+   For **tests only**: `pip install -e ".[dev]"`.
+
+   For **training on Jupyter** (same extras as inference): `pip install -e ".[train]"`.
+
+3. **Checkpoint** — place a trained file at `models/checkpoint.pth` (or set `CHECKPOINT_PATH`). To generate a **dummy** checkpoint for wiring tests (not useful for accuracy):
+
+   ```bash
+   python -m ml.train --config config.yaml --save models/checkpoint.pth --epochs 1
+   ```
+
+4. **Inference CLI** (prints one JSON line: 128 floats):
+
+   ```bash
+   python -m ml.inference --video /path/to/video.mp4 --checkpoint models/checkpoint.pth --config config.yaml
+   ```
 
 ---
 
-## Environment variables (optional)
+## Web app (local)
+
+**Prerequisites:** MongoDB running locally (or set `MONGODB_URI`), Python env as above, checkpoint at `models/checkpoint.pth`.
+
+1. **Install JS dependencies** — from the repo root (installs server + client via npm workspaces):
+
+   ```bash
+   npm install
+   ```
+
+   Or install each app separately under `webapp/server/` and `webapp/client/` as before.
+
+2. **Server** — from `webapp/server/`:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env: REPO_ROOT=absolute path to this repo, MONGODB_URI, CHECKPOINT_PATH if needed
+   npm start
+   ```
+
+   Default API: `http://127.0.0.1:3001`. The server sets `PYTHONPATH` to `src` and runs `python -m ml.inference` on uploaded videos.
+
+3. **Client** — from `webapp/client/`:
+
+   ```bash
+   npm run dev
+   ```
+
+   Open the printed URL (Vite proxies `/api` to port 3001).
+
+---
+
+## CASIA-B data (unchanged helpers)
+
+Download/extract helpers live in [`deep_gait/dataset.py`](deep_gait/dataset.py). Typical flow:
+
+- `mount_google_drive_if_colab()` (no-op locally)
+- `download_casia_if_local()`
+- `extract_casia_archive()` → `data/processed/casia_b_hrnet/`
+
+`CasiaPoseDataset` scans that tree (or a custom `--data-root`) for `.npy` / `.npz` sequences shaped like `(2, T, 17)` or compatible layouts; see [`src/ml/dataset.py`](src/ml/dataset.py).
+
+---
+
+## Environment variables
 
 | Variable | Meaning |
 |----------|--------|
-| `DEEP_GAIT_ROOT` | Absolute path to the project root if auto-detection fails (e.g. unusual kernel `cwd`). |
-| `CASIA_B_HRNET_TAR` | Absolute path to the `.tar` file if it is not under `data/raw/`. |
-| `GOOGLE_DRIVE_FILE_URL_OR_ID` | Drive share URL or file ID for `download_casia_if_local()` when you do not pass an argument in code. |
-
-Project root is normally detected from the installed package location (`pip install -e .`), then from `DEEP_GAIT_ROOT`, `PWD`, the VS Code/Cursor notebook path, and walking parents for `deep_gait/dataset.py` or existing data markers.
+| `DEEP_GAIT_ROOT` | Project root if auto-detection fails. |
+| `CASIA_B_HRNET_TAR` | Path to CASIA `.tar` if not under `data/raw/`. |
+| `GOOGLE_DRIVE_FILE_URL_OR_ID` | For `download_casia_if_local()`. |
+| `MONGODB_URI` | Mongo connection string (web server). |
+| `REPO_ROOT` | Absolute path to repo root (web server; defaults to three levels above `webapp/server/src`). |
+| `PYTHON_BIN` | Python executable for inference (default `python3`). |
+| `CHECKPOINT_PATH` | Override path to `.pth` for inference. |
 
 ---
 
-## Google Colab
+## Tests
 
-- Run **`pip install -e .`** from a clone/upload of this repo (or ensure `deep_gait` is on `PYTHONPATH`), then run the same three cells.
-- The **mount** cell mounts Drive; **download** is a no-op on Colab (archive is read from the mounted Drive path); **extract** writes under `data/processed/casia_b_hrnet/` relative to the notebook’s current working directory (typically `/content`).
+```bash
+pip install -e ".[dev,inference]"
+pytest tests/ -q
+```
 
 ---
 
 ## Git and large files
 
-- **`data/raw/*.tar`** and **`data/processed/`** are ignored so datasets are not committed.
-- Add archives via Drive download or `gdown`, not via Git.
+- `data/raw/*.tar`, `data/processed/casia_b_hrnet/` (extracted CASIA), `models/*.pth`, `webapp/server/uploads/` are ignored.
+- `__pycache__/`, `.pytest_cache/`, build artifacts, and root `node_modules/` (npm workspaces) are ignored.
+- Do not commit datasets or checkpoints; use Drive/`gdown` for archives.
 
 ---
 
-## Where to change dataset behavior
+## Where to change behavior
 
-- Default Drive file ID, archive name, Colab tar path, and folder names: [`deep_gait/dataset.py`](deep_gait/dataset.py).
-- Notebook calls only the public functions; avoid duplicating path logic in the notebook.
+- **Model / window / embedding size:** [`config.yaml`](config.yaml) and [`src/ml/model.py`](src/ml/model.py).
+- **Pose + normalization:** [`src/ml/processor.py`](src/ml/processor.py).
+- **Dataset paths:** [`deep_gait/dataset.py`](deep_gait/dataset.py) and [`src/ml/dataset.py`](src/ml/dataset.py).

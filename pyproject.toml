@@ -5,12 +5,36 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "deep-gait"
 version = "0.1.0"
-description = "Deep Gait POC — gait recognition notebook and tooling"
+description = "DeepGait POC — gait recognition (ST-GCN), dataset tooling, web inference"
 requires-python = ">=3.10"
 dependencies = [
     "gdown>=5.0.0",
+    "numpy>=1.24",
+    "PyYAML>=6.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["deep_gait*"]
+[project.optional-dependencies]
+inference = [
+    "torch>=2.0",
+    "opencv-python-headless>=4.8.0",
+    "mediapipe>=0.10.0",
+]
+train = [
+    "torch>=2.0",
+    "opencv-python-headless>=4.8.0",
+    "mediapipe>=0.10.0",
+]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.setuptools]
+packages = ["deep_gait", "ml"]
+
+[tool.setuptools.package-dir]
+deep_gait = "deep_gait"
+ml = "src/ml"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

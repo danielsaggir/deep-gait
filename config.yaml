@@ -1,0 +1,15 @@
+# DeepGait ML defaults (POC)
+window_size: 64
+joints: 17
+embedding_dim: 128
+hidden_channels: 64
+temporal_kernel: 9
+
+# Inference / server (set CHECKPOINT_PATH env or pass --checkpoint)
+checkpoint_path: models/checkpoint.pth
+
+# BlazePose / MediaPipe
+visibility_threshold: 0.5
+
+# Training (train.py) — adjust for your identity labels
+num_train_classes: 100

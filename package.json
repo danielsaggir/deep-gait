@@ -1,0 +1,14 @@
+{
+  "name": "deep-gait",
+  "private": true,
+  "workspaces": [
+    "webapp/server",
+    "webapp/client"
+  ],
+  "scripts": {
+    "start:server": "npm run start -w deepgait-server",
+    "dev:server": "npm run dev -w deepgait-server",
+    "dev:client": "npm run dev -w deepgait-client",
+    "build:client": "npm run build -w deepgait-client"
+  }
+}
