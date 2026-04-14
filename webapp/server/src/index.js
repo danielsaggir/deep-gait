@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 import pino from "pino";
 import { Suspect } from "./models/Suspect.js";
 import { MatchResult } from "./models/MatchResult.js";
-import { runPythonInference } from "./inference.js";
+import { runPythonInference, resolveCheckpointPath } from "./inference.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const log = pino({
@@ -33,6 +33,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const repoRoot = process.env.REPO_ROOT || path.resolve(__dirname, "..", "..", "..");
+const checkpointFile = resolveCheckpointPath(
+  repoRoot,
+  process.env.CHECKPOINT_PATH
+);
 const envForInference = {
   REPO_ROOT: repoRoot,
   PYTHON_BIN: process.env.PYTHON_BIN || "python3",
@@ -134,6 +138,14 @@ mongoose
   .connect(mongoUri)
   .then(() => {
     log.info("MongoDB connected");
+    log.info(
+      {
+        checkpoint: checkpointFile,
+        inferenceOnly: true,
+        exists: fs.existsSync(checkpointFile),
+      },
+      "loads saved weights for inference only (training is never started by this server)"
+    );
     app.listen(port, () => log.info({ port }, "DeepGait API listening"));
   })
   .catch((err) => {
