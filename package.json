@@ -10,7 +10,8 @@
     "dev:server": "npm run dev -w deepgait-server",
     "dev:client": "npm run dev -w deepgait-client",
     "build:client": "npm run build -w deepgait-client",
-    "dev:all": "bash scripts/free-api-port.sh && concurrently -k -n server,client -c cyan,magenta \"npm run start:server\" \"npm run dev:client\"",
+    "dev": "bash scripts/dev.sh",
+    "dev:all": "npm run dev",
     "run:all": "bash scripts/run-all.sh"
   },
   "devDependencies": {
