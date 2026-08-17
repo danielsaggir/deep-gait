@@ -1,0 +1,696 @@
+/* ==========================================================================
+   Cinematic layer: boot ignition, analysis choreography, result reveal and
+   the post-analysis debrief. Structural styling lives in global.css.
+   ========================================================================== */
+
+/* ---------- boot sequence ---------- */
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 45%, #061019, #010306 70%);
+  cursor: pointer;
+  transition: opacity 900ms var(--ease-soft), transform 900ms var(--ease-out);
+}
+
+.boot.is-exiting {
+  opacity: 0;
+  transform: scale(1.14);
+  pointer-events: none;
+}
+
+.boot-letterbox {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 12vh;
+  background: #000;
+  z-index: 2;
+  animation: letterbox 1.5s var(--ease-out) both;
+  animation-delay: 1.4s;
+}
+
+.boot-letterbox.top {
+  top: 0;
+}
+
+.boot-letterbox.bottom {
+  bottom: 0;
+}
+
+@keyframes letterbox {
+  from {
+    height: 12vh;
+  }
+  to {
+    height: 0;
+  }
+}
+
+.boot-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 340px;
+  height: 340px;
+}
+
+.boot-core svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--cyan);
+}
+
+.boot-ring {
+  stroke-width: 1;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  transform-origin: 120px 120px;
+  animation:
+    ring-draw 1.5s var(--ease-out) both,
+    hud-spin 24s linear infinite;
+  filter: drop-shadow(0 0 8px var(--cyan));
+}
+
+.boot-ring.r1 {
+  animation-delay: 0.05s, 0s;
+}
+.boot-ring.r2 {
+  animation-delay: 0.22s, 0s;
+  animation-direction: normal, reverse;
+}
+.boot-ring.r3 {
+  animation-delay: 0.39s, 0s;
+}
+.boot-ring.r4 {
+  animation-delay: 0.56s, 0s;
+  animation-direction: normal, reverse;
+}
+
+@keyframes ring-draw {
+  from {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 0.85;
+  }
+}
+
+.boot-spark {
+  fill: var(--cyan);
+  stroke: none;
+  animation: spark-ignite 1.6s var(--ease-out) both;
+  transform-origin: 120px 120px;
+}
+
+@keyframes spark-ignite {
+  0% {
+    transform: scale(0);
+    filter: drop-shadow(0 0 0 var(--cyan));
+  }
+  60% {
+    transform: scale(7);
+    filter: drop-shadow(0 0 40px var(--cyan));
+  }
+  100% {
+    transform: scale(2.4);
+    filter: drop-shadow(0 0 18px var(--cyan));
+  }
+}
+
+.boot-wordmark {
+  position: relative;
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+  color: var(--text);
+  text-shadow: 0 0 30px rgba(77, 232, 255, 0.6);
+  animation: wordmark-in 1.4s var(--ease-out) both;
+  animation-delay: 0.7s;
+}
+
+@keyframes wordmark-in {
+  from {
+    opacity: 0;
+    letter-spacing: 1.4em;
+    text-indent: 1.4em;
+    filter: blur(8px);
+  }
+}
+
+.boot-lines {
+  position: absolute;
+  bottom: 18vh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--muted-dim);
+}
+
+.boot-lines li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 420ms var(--ease-out), transform 420ms var(--ease-out), color 420ms;
+}
+
+.boot-lines li.is-shown {
+  opacity: 1;
+  transform: none;
+  color: var(--cyan);
+}
+
+.boot-tick {
+  width: 5px;
+  height: 5px;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.boot-lines li.is-shown .boot-tick {
+  background: currentColor;
+}
+
+.boot-hint {
+  position: absolute;
+  bottom: 6vh;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--muted-dim);
+  opacity: 0;
+  animation: led-pulse 2.6s var(--ease-breathe) infinite;
+  animation-delay: 2.4s;
+  animation-fill-mode: both;
+}
+
+/* ---------- analysis choreography ---------- */
+
+/* A single sweep crossing the whole workstation while the model runs. */
+.screen-sweep {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 42%,
+    rgba(77, 232, 255, 0.05) 49%,
+    rgba(77, 232, 255, 0.14) 50%,
+    rgba(77, 232, 255, 0.05) 51%,
+    transparent 58%
+  );
+  background-size: 260% 100%;
+  animation: screen-sweep 3.2s var(--ease-breathe) infinite;
+}
+
+@keyframes screen-sweep {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+
+.workstation.is-analyzing .hud-bg::before {
+  animation-duration: 14s;
+  opacity: 1;
+}
+
+.workstation.is-analyzing .subject-panel,
+.workstation.is-analyzing .core {
+  border-color: var(--line-mid);
+}
+
+/* Panels lean toward the core as it draws data from them. */
+.workstation.is-analyzing .stage-grid > .subject-panel:first-of-type {
+  animation: lean-right 4.4s var(--ease-breathe) infinite;
+}
+
+.workstation.is-analyzing .stage-grid > .subject-panel:last-of-type {
+  animation: lean-left 4.4s var(--ease-breathe) infinite;
+}
+
+@keyframes lean-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes lean-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+}
+
+.workstation.is-analyzing .core {
+  box-shadow:
+    0 0 60px rgba(77, 232, 255, 0.08),
+    inset 0 0 80px rgba(77, 232, 255, 0.05);
+}
+
+/* ---------- result reveal ---------- */
+
+.shockwave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 240px;
+  height: 240px;
+  margin: -120px 0 0 -120px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  animation: shockwave 1.5s var(--ease-out) both;
+}
+
+.shockwave.w2 {
+  animation-delay: 0.16s;
+}
+
+.shockwave.w3 {
+  animation-delay: 0.32s;
+}
+
+@keyframes shockwave {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+
+.result-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, currentColor, transparent 55%);
+  animation: result-flash 900ms var(--ease-out) both;
+}
+
+@keyframes result-flash {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.16;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- education flow ---------- */
+
+.edu {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background:
+    radial-gradient(1200px 700px at 50% 0%, rgba(20, 60, 96, 0.35), transparent 60%),
+    rgba(3, 6, 11, 0.94);
+  backdrop-filter: blur(6px);
+  animation: edu-in 620ms var(--ease-out) both;
+}
+
+@keyframes edu-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.edu-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.26em;
+}
+
+.edu-kicker {
+  color: var(--cyan);
+}
+
+.edu-count {
+  color: var(--muted-dim);
+  margin-left: auto;
+}
+
+.edu-body {
+  display: grid;
+  grid-template-columns: 250px 1fr 380px;
+  gap: 36px;
+  padding: 34px 28px;
+  align-items: start;
+  min-height: 0;
+}
+
+.edu-rail {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+}
+
+.edu-rail li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  color: var(--muted-dim);
+  cursor: pointer;
+  position: relative;
+  transition: color var(--dur-med) var(--ease-soft);
+}
+
+.edu-rail-node {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  flex: none;
+}
+
+.edu-rail-node::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: 15px;
+  background: currentColor;
+  opacity: 0.3;
+}
+
+.edu-rail li:last-child .edu-rail-node::after {
+  display: none;
+}
+
+.edu-rail li.is-done {
+  color: rgba(94, 224, 181, 0.7);
+}
+
+.edu-rail li.is-done .edu-rail-node,
+.edu-rail li.is-active .edu-rail-node {
+  background: currentColor;
+}
+
+.edu-rail li.is-active {
+  color: var(--cyan);
+}
+
+.edu-stage {
+  animation: rise-in var(--dur-slow) var(--ease-out) both;
+}
+
+.edu-stage h2 {
+  margin: 0 0 14px;
+  font-family: var(--cond);
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text);
+}
+
+.edu-stage p {
+  margin: 0 0 22px;
+  max-width: 62ch;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+.edu-figures {
+  display: flex;
+  gap: 34px;
+}
+
+.edu-figures div {
+  border-left: 1px solid var(--line-mid);
+  padding-left: 12px;
+  animation: rise-in var(--dur-slow) var(--ease-out) both;
+  animation-delay: 180ms;
+}
+
+.edu-figures label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--muted-dim);
+}
+
+.edu-figures b {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--cyan);
+}
+
+.edu-visual {
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: rgba(6, 12, 20, 0.5);
+  animation: settle-in var(--dur-slow) var(--ease-out) both;
+  animation-delay: 120ms;
+}
+
+.edu-diagram {
+  width: 100%;
+  height: auto;
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 1;
+}
+
+.edu-diagram text {
+  fill: var(--muted-dim);
+  stroke: none;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
+.edu-frame {
+  opacity: 0.75;
+  animation: rise-in 520ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+.edu-arrow {
+  stroke-dasharray: 4 8;
+  animation: packet-travel 2.4s linear infinite;
+}
+
+.edu-bone {
+  opacity: 0.5;
+  animation: rise-in 460ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 34ms);
+}
+
+.edu-joint {
+  fill: var(--cyan);
+  stroke: none;
+  animation: settle-in 420ms var(--ease-out) both;
+  animation-delay: calc(200ms + var(--i) * 34ms);
+}
+
+.edu-axis {
+  stroke: var(--line-mid);
+  stroke-dasharray: 3 5;
+}
+
+.edu-origin {
+  fill: var(--cyan);
+  stroke: none;
+}
+
+.edu-orbit {
+  stroke-dasharray: 60 940;
+  animation: hud-spin 6s linear infinite;
+  transform-origin: 110px 70px;
+}
+
+.edu-orbit.slow {
+  stroke-dasharray: 120 880;
+  animation-duration: 11s;
+  animation-direction: reverse;
+  opacity: 0.5;
+}
+
+.edu-bar rect {
+  fill: rgba(77, 232, 255, 0.28);
+  stroke: var(--cyan);
+  transform-origin: bottom;
+  animation: bar-grow 700ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 80ms);
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+}
+
+.edu-node {
+  fill: var(--cyan);
+  stroke: none;
+  animation: settle-in 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 46ms);
+}
+
+.edu-edge {
+  stroke: rgba(77, 232, 255, 0.16);
+}
+
+.edu-vector {
+  fill: rgba(77, 232, 255, 0.55);
+  stroke: none;
+  transform-origin: left;
+  animation: bar-grow 520ms var(--ease-out) both;
+  animation-delay: calc(500ms + var(--i) * 34ms);
+}
+
+.edu-vector-a,
+.edu-vector-b {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.edu-vector-a {
+  stroke: var(--blue);
+}
+
+.edu-vector-b {
+  stroke: var(--cyan);
+}
+
+.edu-angle {
+  stroke: var(--warn);
+  stroke-dasharray: 2 3;
+}
+
+.edu-figure {
+  fill: var(--cyan);
+  font-size: 11px;
+}
+
+.edu-figure.mark {
+  fill: var(--muted-dim);
+  font-size: 7px;
+}
+
+.edu-track {
+  fill: rgba(120, 180, 215, 0.12);
+  stroke: none;
+}
+
+.edu-fill {
+  fill: var(--cyan);
+  stroke: none;
+  transform-origin: left;
+  animation: bar-grow 1100ms var(--ease-out) both;
+}
+
+.edu-threshold {
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.edu-foot {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 28px 22px;
+  border-top: 1px solid var(--line);
+}
+
+.edu-progress {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.edu-progress span {
+  display: block;
+  height: 100%;
+  background: var(--cyan);
+  transform-origin: left;
+  animation: edu-progress linear both;
+}
+
+.edu-progress span.is-paused {
+  animation-play-state: paused;
+}
+
+@keyframes edu-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.edu-controls {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 1400px) {
+  .edu-body {
+    grid-template-columns: 210px 1fr 300px;
+    gap: 24px;
+  }
+  .edu-stage h2 {
+    font-size: 30px;
+  }
+}
