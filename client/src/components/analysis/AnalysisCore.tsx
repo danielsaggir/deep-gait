@@ -41,11 +41,6 @@ export function AnalysisCore({
         <span className="core-head-id">STGCN // SIAMESE</span>
       </div>
 
-      <div className="feed-lines" aria-hidden="true">
-        <span className="feed feed-a" />
-        <span className="feed feed-b" />
-      </div>
-
       <ReactorCore
         state={reactorState}
         probability={analysis ? analysis.result.samePersonProbability : null}

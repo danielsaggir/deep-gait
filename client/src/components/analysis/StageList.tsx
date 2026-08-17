@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { STAGES, type Phase } from "../../types/analysis";
 
 type Props = {
@@ -18,9 +19,13 @@ export function StageList({ stageIndex, phase }: Props) {
       {STAGES.map((name, i) => {
         const status = statusFor(i, stageIndex, phase);
         return (
-          <li className={`stage is-${status.toLowerCase()}`} key={name}>
+          <li
+            className={`stage is-${status.toLowerCase()}`}
+            key={name}
+            style={{ "--i": i } as CSSProperties}
+          >
             <span className="stage-index">{String(i + 1).padStart(2, "0")}</span>
-            <span className="stage-rail" />
+            <span className="stage-node" />
             <span className="stage-name">{name}</span>
             <span className="stage-status">{status}</span>
           </li>

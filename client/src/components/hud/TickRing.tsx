@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 type Props = {
   radius: number;
   count: number;
@@ -39,15 +41,17 @@ export function TickRing({
     );
   }
 
+  // Exposed as custom properties so the stylesheet owns the animation and can
+  // layer a breathing opacity on top of the rotation.
   const style = spin
-    ? {
-        animation: `hud-spin ${Math.abs(spin)}s linear infinite`,
-        animationDirection: spin < 0 ? ("reverse" as const) : ("normal" as const),
-      }
+    ? ({
+        "--spin": `${Math.abs(spin)}s`,
+        "--spin-dir": spin < 0 ? "reverse" : "normal",
+      } as CSSProperties)
     : undefined;
 
   return (
-    <g className="tick-ring" style={style} stroke="currentColor">
+    <g className={`tick-ring ${spin ? "is-spinning" : ""}`} style={style} stroke="currentColor">
       {ticks}
     </g>
   );
