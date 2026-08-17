@@ -1,187 +1,135 @@
-# Deep Gait
+# DeepGait
 
-Gait recognition starter: **ST-GCN** (128-D embeddings), **MediaPipe/BlazePose** pose extraction, **CASIA-B** path helpers, a **Python inference CLI** for Node, and a **React + Express + MongoDB** web dashboard for uploads and similarity search.
-
-**GitHub:** [github.com/danielsaggir/deep-gait](https://github.com/danielsaggir/deep-gait)
-
----
-
-## Infrastructure split
-
-| Where | Role |
-|-------|------|
-| **University Jupyter Server** | Heavy **training** (`python -m ml.train`, notebooks, CASIA data, GPU). Save checkpoints (e.g. `models/checkpoint.pth`) and copy or sync them to your machine. |
-| **Local machine** | **Web app** (Node + React + MongoDB) and **inference** only (`python -m ml.inference`). |
-
----
-
-## Repository layout
+Cinematic gait-verification workstation. Two walking videos are converted into 17-joint COCO skeletons, preprocessed with the trained research pipeline, and compared by a Siamese ST-GCN. The classifier probability is the decision; cosine similarity is supporting evidence.
 
 ```text
-Deep Gait/
-├── config.yaml              # window_size, joints, embedding_dim, checkpoint path hints
-├── package.json             # npm workspaces (webapp/server + webapp/client)
-├── pyproject.toml           # deep_gait + ml packages; optional extras [inference], [train], [dev]
-├── requirements.txt         # pip install -r → editable install + inference deps
-├── data/
-│   ├── raw/                 # CASIA .tar (gitignored); .gitkeep keeps the folder
-│   └── processed/           # extracted data (gitignored)
-├── notebooks/
-│   └── DeepGait.ipynb       # Original Colab-style walkthrough
-├── src/ml/                  # Production / research ML code
-│   ├── model.py             # STGCN → 128-D
-│   ├── processor.py         # GaitProcessor (video → tensor)
-│   ├── dataset.py           # CasiaPoseDataset (.npy / .npz)
-│   ├── inference.py         # CLI JSON signature (for Express bridge)
-│   └── train.py             # Minimal training (Jupyter-oriented)
-├── deep_gait/               # CASIA helpers only (`dataset.py` + `__init__.py`)
-├── models/                  # Put checkpoints here (e.g. checkpoint.pth; gitignored)
-├── tests/                   # pytest smoke tests
-├── scripts/
-│   ├── run-all.sh           # Mongo (Docker) + API + Vite — see “Run everything (local)”
-│   └── free-api-port.sh     # Used by `npm run dev:all` to clear the API port (see below)
-└── webapp/
-    ├── server/              # Express API, uploads/, MongoDB, spawns Python inference
-    └── client/              # Vite + React dashboard
+Video A + Video B
+  → YOLO11-pose (COCO-17, pixel coords)
+  → isotropic scale to CASIA-B width 320, ~25 fps
+  → preprocess_skeleton (pelvis-center, 8 channels, 64 frames)
+  → SiameseGaitVerifier (reference/best_gait_verifier.pth)
+  → sigmoid(logit) ≥ 0.5 → LIKELY MATCH
 ```
 
----
+## Architecture
+
+```text
+React (TypeScript SPA)
+  → Express (TypeScript)
+    → Python process (`python -m ml.inference`)
+      → pose extraction + authoritative preprocessing + PyTorch
+```
+
+There is no database, authentication, or job queue.
+
+| Path | Role |
+|------|------|
+| `client/` | React workstation |
+| `server/src/` | Express API |
+| `server/ml/` | Production Python runtime |
+| `reference/` | Research source of truth (do not modify for app convenience) |
+| `server/ml/weights/best_gait_verifier.pth` | Trained Siamese checkpoint (epoch 16) |
+
+## Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- npm
+
+GPU (CUDA) is optional. CPU inference is supported.
 
 ## Python setup
 
-1. **Python 3.10+** and a virtual environment:
-
-   ```bash
-   cd "/path/to/Deep Gait"
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-2. **Install** (local inference + web bridge):
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-   This installs `deep-gait` in editable mode with **`[inference]`** extras (PyTorch, OpenCV, MediaPipe).
-
-   For **tests only**: `pip install -e ".[dev]"`.
-
-   For **training on Jupyter** (same extras as inference): `pip install -e ".[train]"`.
-
-3. **Checkpoint** — place a trained file at `models/checkpoint.pth` (or set `CHECKPOINT_PATH`). To generate a **dummy** checkpoint for wiring tests (not useful for accuracy):
-
-   ```bash
-   python -m ml.train --config config.yaml --save models/checkpoint.pth --epochs 1
-   ```
-
-4. **Inference CLI** (prints one JSON line: 128 floats):
-
-   ```bash
-   python -m ml.inference --video /path/to/video.mp4 --checkpoint models/checkpoint.pth --config config.yaml
-   ```
-
----
-
-## Web app (local)
-
-**Prerequisites:** MongoDB running locally (or set `MONGODB_URI`), Python env as above, checkpoint at `models/checkpoint.pth`.
-
-1. **Install JS dependencies** — from the repo root (installs server + client via npm workspaces):
-
-   ```bash
-   npm install
-   ```
-
-   Or install each app separately under `webapp/server/` and `webapp/client/` as before.
-
-2. **Server** — from `webapp/server/`:
-
-   ```bash
-   cp .env.example .env
-   # Edit .env: REPO_ROOT=absolute path to this repo, MONGODB_URI, CHECKPOINT_PATH if needed
-   npm start
-   ```
-
-   Default API: `http://127.0.0.1:3001`. The server sets `PYTHONPATH` to `src` and runs `python -m ml.inference` on uploaded videos.
-
-3. **Client** — from `webapp/client/`:
-
-   ```bash
-   npm run dev
-   ```
-
-   Open the printed URL (Vite proxies `/api` to port 3001).
-
-### Run everything (local)
-
-Use this when you want **one command** for the full stack: ensure MongoDB is up, then run the **Express API** and **Vite client** together (with labeled, merged logs). Training is **not** started; inference uses `CHECKPOINT_PATH` in `webapp/server/.env` as usual.
-
-From the repo root (after `npm install` and a configured `webapp/server/.env`):
-
 ```bash
-npm run run:all
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[inference]"
 ```
 
-What it does:
+Pose extraction uses Ultralytics **YOLO11-pose** (`yolo11n-pose.pt`). Weights are stored at `server/ml/weights/yolo11n-pose.pt` after the first download (gitignored). If that file is missing, Ultralytics downloads it automatically.
 
-| Step | Behavior |
-|------|----------|
-| MongoDB | If nothing is listening on `127.0.0.1:27017`, the script starts (or reuses) a Docker container named `deepgait-mongo` (`mongo:7`). If you already run MongoDB yourself, it skips Docker. |
-| Remote DB | If you use Atlas or another host, set `MONGODB_URI` in `.env` and run with `SKIP_MONGO_DOCKER=1 npm run run:all` so the script does not try to start Docker. |
-| Processes | Runs `npm run dev:all`, which clears the **API port** (see below), then starts **server** and **client** in parallel; **Ctrl+C** stops both (`concurrently -k`). |
+Checkpoint (already in the repo):
 
-Equivalent manual steps: start Mongo, then `npm run start:server` in one terminal and `npm run dev:client` in another. To run only the two Node processes without the Mongo helper (Mongo already running): `npm run dev:all`.
+```text
+server/ml/weights/best_gait_verifier.pth
+```
 
-**API port in use (`EADDRINUSE`):** `npm run dev:all` / `npm run run:all` runs [`scripts/free-api-port.sh`](scripts/free-api-port.sh) first: it reads `PORT` from `webapp/server/.env` (default **3001**) and stops any process **listening** on that port so a leftover API from an earlier session does not block startup. To skip that (e.g. another app must keep the port), run `SKIP_FREE_API_PORT=1 npm run dev:all`. If you use a non-default API port, set `PORT` in `.env` and point the dev proxy at the same port in [`webapp/client/vite.config.js`](webapp/client/vite.config.js) (`proxy["/api"].target`). Running **`npm run start:server` alone** does not run the free-port step; free it manually if needed (`lsof -iTCP:3001 -sTCP:LISTEN`, then `kill`).
+Override with `CHECKPOINT_PATH` if needed.
 
----
+## Node setup
 
-## CASIA-B data (unchanged helpers)
+```bash
+npm install
+cp server/.env.example server/.env
+# PYTHON_BIN should point at the venv, e.g. .venv/bin/python
+```
 
-Download/extract helpers live in [`deep_gait/dataset.py`](deep_gait/dataset.py). Typical flow:
+Example `server/.env`:
 
-- `mount_google_drive_if_colab()` (no-op locally)
-- `download_casia_if_local()`
-- `extract_casia_archive()` → `data/processed/casia_b_hrnet/`
+```text
+PORT=3001
+PYTHON_BIN=/absolute/path/to/Deep Gait/.venv/bin/python
+CHECKPOINT_PATH=server/ml/weights/best_gait_verifier.pth
+MAX_UPLOAD_MB=80
+```
 
-`CasiaPoseDataset` scans that tree (or a custom `--data-root`) for `.npy` / `.npz` sequences shaped like `(2, T, 17)` or compatible layouts; see [`src/ml/dataset.py`](src/ml/dataset.py).
+## Development
 
----
+From the repository root:
 
-## Environment variables
+```bash
+npm run dev
+```
 
-| Variable | Meaning |
-|----------|--------|
-| `DEEP_GAIT_ROOT` | Project root if auto-detection fails. |
-| `CASIA_B_HRNET_TAR` | Path to CASIA `.tar` if not under `data/raw/`. |
-| `GOOGLE_DRIVE_FILE_URL_OR_ID` | For `download_casia_if_local()`. |
-| `MONGODB_URI` | Mongo connection string (web server). |
-| `REPO_ROOT` | Absolute path to repo root (web server; defaults to three levels above `webapp/server/src`). |
-| `PYTHON_BIN` | Python executable for inference (default `python3`). |
-| `CHECKPOINT_PATH` | Override path to `.pth` for inference. |
-
----
+- API: `http://127.0.0.1:3001`
+- UI: `http://127.0.0.1:5173` (proxies `/api`)
 
 ## Tests
 
 ```bash
-pip install -e ".[dev,inference]"
-pytest tests/ -q
+source .venv/bin/activate
+pip install -e ".[dev]"
+python -m pytest tests -q
+npm test
 ```
 
----
+## Production build
 
-## Git and large files
+```bash
+npm run build
+```
 
-- `data/raw/*.tar`, `data/processed/casia_b_hrnet/` (extracted CASIA), `models/*.pth`, `webapp/server/uploads/` are ignored.
-- `__pycache__/`, `.pytest_cache/`, build artifacts, and root `node_modules/` (npm workspaces) are ignored.
-- Do not commit datasets or checkpoints; use Drive/`gdown` for archives.
+Typechecks both packages and builds the Vite client.
 
----
+## API
 
-## Where to change behavior
+`GET /api/health` — Python / checkpoint / device readiness.
 
-- **Model / window / embedding size:** [`config.yaml`](config.yaml) and [`src/ml/model.py`](src/ml/model.py).
-- **Pose + normalization:** [`src/ml/processor.py`](src/ml/processor.py).
-- **Dataset paths:** [`deep_gait/dataset.py`](deep_gait/dataset.py) and [`src/ml/dataset.py`](src/ml/dataset.py).
+`POST /api/analysis` — multipart fields `videoA`, `videoB`. Returns match probability, cosine similarity, pose frames, gait signatures, embeddings, and timings.
+
+## Raw video → model
+
+Training skeletons are CASIA-B HRNet pickles: `(T, 17, 3)` pixel coordinates on ~320×240 frames. Production therefore:
+
+1. Decodes the video
+2. Samples near 25 fps
+3. Runs YOLO11-pose (native COCO-17)
+4. Selects one person (IoU track, else largest box)
+5. Keeps detected `x,y` even at modest confidence (training did the same)
+6. Scales keypoints isotropically so image width maps to 320
+7. Runs `preprocess_skeleton(..., is_training=False)`: pelvis-center, angles, torso-normalized bones, velocity, acceleration, center-crop or zero-pad to 64
+8. Loads the checkpoint with `in_channels=8` and `strict=True`
+
+If fewer than 16 frames contain a person, or coverage is below 25%, the API returns `INSUFFICIENT_GAIT_DATA` instead of scoring noise.
+
+## Known limitations
+
+- Detector family differs from training (HRNet → YOLO11-pose). Joint convention and coordinate scale are aligned; residual domain shift remains.
+- The product compares two sequences. It does not search a gallery or claim identity certainty.
+- Evaluation on the research test split was 86.87% cross-class and 83.33% within-class. Those figures are not per-video confidence.
+- Multi-person footage uses a single tracked subject. Crowded scenes can fail or mix identities.
+- CPU pose extraction of two HD videos can take tens of seconds.
+
+## Compute device
+
+Python uses CUDA when `torch.cuda.is_available()`, otherwise CPU. The UI health strip shows the device reported by `/api/health`.
