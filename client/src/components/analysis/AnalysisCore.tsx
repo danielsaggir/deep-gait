@@ -41,11 +41,20 @@ export function AnalysisCore({
         <span className="core-head-id">STGCN // SIAMESE</span>
       </div>
 
-      <ReactorCore
-        state={reactorState}
-        probability={analysis ? analysis.result.samePersonProbability : null}
-        threshold={analysis ? analysis.result.threshold : 0.5}
-      />
+      <div className="core-reactor-slot">
+        {analysis ? (
+          <>
+            <span className="shockwave" aria-hidden="true" />
+            <span className="shockwave w2" aria-hidden="true" />
+            <span className="shockwave w3" aria-hidden="true" />
+          </>
+        ) : null}
+        <ReactorCore
+          state={reactorState}
+          probability={analysis ? analysis.result.samePersonProbability : null}
+          threshold={analysis ? analysis.result.threshold : 0.5}
+        />
+      </div>
 
       {analysis ? (
         <div className={`verdict ${match ? "is-match" : "is-diff"}`}>

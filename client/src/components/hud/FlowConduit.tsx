@@ -6,7 +6,7 @@ type Props = {
   flowing: boolean;
 };
 
-const PACKET_DELAYS = ["0s", "0.7s", "1.4s"];
+const PACKET_DELAYS = ["0s", "0.35s", "0.7s", "1.05s", "1.4s", "1.75s"];
 
 /**
  * Conduits running from each subject panel into the analysis core. The panels

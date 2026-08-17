@@ -692,6 +692,26 @@ button {
 
 /* ---------- reactor ---------- */
 
+.core-reactor-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: inherit;
+}
+
+.core.is-match .core-reactor-slot {
+  color: var(--ok);
+}
+
+.core.is-different .core-reactor-slot {
+  color: var(--warn);
+}
+
+.core.is-analyzing .core-reactor-slot,
+.core.is-idle .core-reactor-slot {
+  color: var(--cyan);
+}
+
 .reactor {
   position: relative;
   width: 290px;
@@ -1062,6 +1082,11 @@ button {
 
 .bottom {
   padding: 14px 18px 16px;
+}
+
+.bottom-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .bottom-head {

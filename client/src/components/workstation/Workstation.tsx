@@ -1,5 +1,14 @@
-import { useCallback, useEffect, useReducer, useRef, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { audio } from "../../audio/engine";
+import { BootSequence } from "../cinematic/BootSequence";
+import { EducationFlow } from "../cinematic/EducationFlow";
 import { workstationReducer, initialState } from "../../hooks/workstationReducer";
 import { runAnalysis } from "../../services/api";
 import type { AnalysisResult, VideoMetadata } from "../../types/analysis";
@@ -32,6 +41,18 @@ export function Workstation() {
   const mutedRef = useRef(sessionStorage.getItem("deepgait-muted") === "1");
   const [state, dispatch] = useReducer(workstationReducer, initialState(mutedRef.current));
   const stageTimer = useRef<number | null>(null);
+  const [booting, setBooting] = useState(true);
+  const [debrief, setDebrief] = useState(false);
+
+  // The debrief opens on its own once the reveal has had time to land.
+  useEffect(() => {
+    if (state.phase !== "RESULT") {
+      setDebrief(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setDebrief(true), 2600);
+    return () => window.clearTimeout(timer);
+  }, [state.phase]);
 
   useEffect(() => {
     sessionStorage.setItem("deepgait-muted", state.muted ? "1" : "0");
@@ -92,10 +113,22 @@ export function Workstation() {
 
   const analysis = state.analysis;
 
+  const analyzing = state.phase === "ANALYZING";
+  const match = analysis?.result.verdict === "LIKELY_MATCH";
+
   return (
     <div className="app-root">
       <div className="hud-bg" />
-      <div className="workstation">
+      {booting ? <BootSequence onComplete={() => setBooting(false)} /> : null}
+      {analyzing ? <div className="screen-sweep" aria-hidden="true" /> : null}
+      {analysis ? (
+        <div
+          className="result-flash"
+          aria-hidden="true"
+          style={{ color: match ? "var(--ok)" : "var(--warn)" }}
+        />
+      ) : null}
+      <div className={`workstation ${analyzing ? "is-analyzing" : ""}`}>
         <Header
           muted={state.muted}
           onToggleMute={() => {
@@ -144,13 +177,18 @@ export function Workstation() {
             <>
               <div className="bottom-head">
                 <span>ANALYSIS TELEMETRY</span>
-                <button
-                  type="button"
-                  className={state.overlayEnabled ? "ghost active" : "ghost"}
-                  onClick={() => dispatch({ type: "TOGGLE_OVERLAY" })}
-                >
-                  {state.overlayEnabled ? "SKELETON ON" : "SKELETON OFF"}
-                </button>
+                <div className="bottom-actions">
+                  <button type="button" className="ghost" onClick={() => setDebrief(true)}>
+                    PIPELINE DEBRIEF
+                  </button>
+                  <button
+                    type="button"
+                    className={state.overlayEnabled ? "ghost active" : "ghost"}
+                    onClick={() => dispatch({ type: "TOGGLE_OVERLAY" })}
+                  >
+                    {state.overlayEnabled ? "SKELETON ON" : "SKELETON OFF"}
+                  </button>
+                </div>
               </div>
               <div className="metrics">
                 {metricsFor(analysis).map(([label, value], i) => (
@@ -188,6 +226,9 @@ export function Workstation() {
           </details>
         </HudFrame>
       </div>
+      {debrief && analysis ? (
+        <EducationFlow analysis={analysis} onClose={() => setDebrief(false)} />
+      ) : null}
     </div>
   );
 }
