@@ -1,19 +1,15 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { GaitMark } from "../brand/GaitMark";
 
 type Props = {
   onComplete: () => void;
 };
 
-const LINES = [
-  "POWERING BIOMETRIC CORE",
-  "MOUNTING ST-GCN WEIGHTS",
-  "CALIBRATING POSE ENGINE",
-  "GAIT VERIFICATION SUITE ONLINE",
-];
+const LINES = ["Loading Siamese ST-GCN", "Starting pose estimator", "Ready"];
 
-const LINE_MS = 460;
-const HOLD_MS = 620;
-const EXIT_MS = 900;
+const LINE_MS = 300;
+const HOLD_MS = 320;
+const EXIT_MS = 620;
 
 /** Ignition sequence played once on load. Click or press any key to skip. */
 export function BootSequence({ onComplete }: Props) {
@@ -24,14 +20,14 @@ export function BootSequence({ onComplete }: Props) {
     const timers: number[] = [];
 
     LINES.forEach((_, i) => {
-      timers.push(window.setTimeout(() => setVisible(i + 1), 700 + i * LINE_MS));
+      timers.push(window.setTimeout(() => setVisible(i + 1), 320 + i * LINE_MS));
     });
 
     timers.push(
-      window.setTimeout(() => setExiting(true), 700 + LINES.length * LINE_MS + HOLD_MS)
+      window.setTimeout(() => setExiting(true), 320 + LINES.length * LINE_MS + HOLD_MS)
     );
     timers.push(
-      window.setTimeout(onComplete, 700 + LINES.length * LINE_MS + HOLD_MS + EXIT_MS)
+      window.setTimeout(onComplete, 320 + LINES.length * LINE_MS + HOLD_MS + EXIT_MS)
     );
 
     return () => timers.forEach(window.clearTimeout);
@@ -54,18 +50,26 @@ export function BootSequence({ onComplete }: Props) {
         window.setTimeout(onComplete, 420);
       }}
     >
-      <div className="boot-letterbox top" />
-      <div className="boot-letterbox bottom" />
+      <div className="boot-aurora" aria-hidden="true" />
 
       <div className="boot-core">
         <svg viewBox="0 0 240 240" aria-hidden="true">
-          <circle className="boot-ring r1" cx="120" cy="120" r="110" pathLength={1000} />
-          <circle className="boot-ring r2" cx="120" cy="120" r="88" pathLength={1000} />
-          <circle className="boot-ring r3" cx="120" cy="120" r="64" pathLength={1000} />
-          <circle className="boot-ring r4" cx="120" cy="120" r="40" pathLength={1000} />
+          <defs>
+            <linearGradient id="bootGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="var(--accent)" />
+              <stop offset="100%" stopColor="var(--indigo)" />
+            </linearGradient>
+          </defs>
+          <circle className="boot-ring r1" cx="120" cy="120" r="110" pathLength={1000} stroke="url(#bootGrad)" />
+          <circle className="boot-ring r2" cx="120" cy="120" r="88" pathLength={1000} stroke="url(#bootGrad)" />
+          <circle className="boot-ring r3" cx="120" cy="120" r="64" pathLength={1000} stroke="url(#bootGrad)" />
+          <circle className="boot-ring r4" cx="120" cy="120" r="40" pathLength={1000} stroke="url(#bootGrad)" />
           <circle className="boot-spark" cx="120" cy="120" r="3" />
         </svg>
-        <div className="boot-wordmark">DEEPGAIT</div>
+        <span className="boot-mark">
+          <GaitMark id="boot" />
+        </span>
+        <div className="boot-wordmark">DeepGait</div>
       </div>
 
       <ol className="boot-lines">
@@ -81,7 +85,7 @@ export function BootSequence({ onComplete }: Props) {
         ))}
       </ol>
 
-      <div className="boot-hint">PRESS ANY KEY TO SKIP</div>
+      <div className="boot-hint">Click or press any key to skip</div>
     </div>
   );
 }

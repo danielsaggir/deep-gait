@@ -1,15 +1,19 @@
 import type { PoseFrame } from "../types/analysis";
 
+/**
+ * Called once per animation frame per overlay, so it stops as soon as the
+ * distance starts growing again: timestamps arrive in order, which makes the
+ * distance curve unimodal and the rest of the scan pointless.
+ */
 export function nearestPoseFrame(frames: PoseFrame[], time: number): PoseFrame | null {
   if (!frames.length) return null;
   let best = frames[0];
   let bestDist = Math.abs(best.timestamp - time);
   for (let i = 1; i < frames.length; i += 1) {
     const dist = Math.abs(frames[i].timestamp - time);
-    if (dist < bestDist) {
-      best = frames[i];
-      bestDist = dist;
-    }
+    if (dist >= bestDist) break;
+    best = frames[i];
+    bestDist = dist;
   }
   return best;
 }

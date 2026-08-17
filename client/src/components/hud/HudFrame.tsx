@@ -6,14 +6,11 @@ type Props = {
   active?: boolean;
 };
 
-/** Thin corner brackets that frame a panel without adding a filled box. */
+/** Floating glass shell — no corner brackets, just depth and light. */
 export function HudFrame({ children, className = "", active = false }: Props) {
   return (
-    <div className={`hud-frame ${active ? "is-active" : ""} ${className}`}>
-      <span className="bracket tl" />
-      <span className="bracket tr" />
-      <span className="bracket bl" />
-      <span className="bracket br" />
+    <div className={`glass-panel ${active ? "is-active" : ""} ${className}`}>
+      <div className="glass-panel-shimmer" aria-hidden="true" />
       {children}
     </div>
   );

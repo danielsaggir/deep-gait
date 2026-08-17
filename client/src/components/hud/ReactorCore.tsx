@@ -21,18 +21,23 @@ export function ReactorCore({ state, probability, threshold }: Props) {
     <div className={`reactor reactor-${state}`}>
       <svg viewBox="0 0 200 200" className="reactor-svg" aria-hidden="true">
         <defs>
+          <linearGradient id="reactorArcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--accent)" />
+            <stop offset="50%" stopColor="var(--indigo)" />
+            <stop offset="100%" stopColor="var(--accent-bright)" />
+          </linearGradient>
           <radialGradient id="coreGlow">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.5" />
-            <stop offset="55%" stopColor="currentColor" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.55" />
+            <stop offset="55%" stopColor="var(--indigo)" stopOpacity="0.15" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </radialGradient>
         </defs>
 
         <circle cx="100" cy="100" r="62" fill="url(#coreGlow)" className="reactor-glow" />
 
-        <TickRing radius={94} count={120} length={4} opacity={0.25} spin={110} majorEvery={10} />
+        <TickRing radius={94} count={60} length={4} opacity={0.25} spin={110} majorEvery={5} />
         <circle cx="100" cy="100" r="86" className="ring hairline" />
-        <TickRing radius={82} count={48} length={5} opacity={0.38} spin={-58} majorEvery={12} />
+        <TickRing radius={82} count={30} length={5} opacity={0.38} spin={-58} majorEvery={6} />
 
         <circle cx="100" cy="100" r={ARC_RADIUS} className="ring track" />
         <circle
@@ -73,18 +78,18 @@ export function ReactorCore({ state, probability, threshold }: Props) {
           <>
             <span className="readout-idle">
               {state === "analyzing"
-                ? "PROCESSING"
+                ? "Working"
                 : state === "error"
-                  ? "INTERRUPTED"
-                  : "STANDBY"}
+                  ? "Stopped"
+                  : "Standby"}
             </span>
-            <span className="readout-sub">DEEPGAIT CORE</span>
+            <span className="readout-sub">DeepGait</span>
           </>
         ) : (
           <>
-            <span className="readout-label">MATCH PROBABILITY</span>
+            <span className="readout-label">Match probability</span>
             <span className="readout-value">{(shown * 100).toFixed(1)}%</span>
-            <span className="readout-sub">THRESHOLD {(threshold * 100).toFixed(0)}%</span>
+            <span className="readout-sub">Threshold {(threshold * 100).toFixed(0)}%</span>
           </>
         )}
       </div>

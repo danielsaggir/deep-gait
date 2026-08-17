@@ -11,42 +11,27 @@
   z-index: 100;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 50% 45%, #061019, #010306 70%);
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, var(--bg-2), var(--bg-0) 70%);
   cursor: pointer;
   transition: opacity 900ms var(--ease-soft), transform 900ms var(--ease-out);
+  overflow: hidden;
 }
 
-.boot.is-exiting {
-  opacity: 0;
-  transform: scale(1.14);
-  pointer-events: none;
-}
-
-.boot-letterbox {
+.boot-aurora {
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 12vh;
-  background: #000;
-  z-index: 2;
-  animation: letterbox 1.5s var(--ease-out) both;
-  animation-delay: 1.4s;
+  inset: -30%;
+  background: radial-gradient(circle at 40% 50%, rgba(77, 155, 255, 0.25), transparent 50%),
+    radial-gradient(circle at 65% 45%, rgba(67, 56, 202, 0.2), transparent 45%);
+  filter: blur(60px);
+  animation: aurora-drift 12s ease-in-out infinite alternate;
 }
 
-.boot-letterbox.top {
-  top: 0;
-}
-
-.boot-letterbox.bottom {
-  bottom: 0;
-}
-
-@keyframes letterbox {
+@keyframes aurora-drift {
   from {
-    height: 12vh;
+    transform: translate3d(-3%, -2%, 0) scale(1);
   }
   to {
-    height: 0;
+    transform: translate3d(3%, 2%, 0) scale(1.14);
   }
 }
 
@@ -54,17 +39,33 @@
   position: relative;
   display: grid;
   place-items: center;
+  gap: 18px;
   width: 340px;
   height: 340px;
 }
 
-.boot-core svg {
+/* Only the ring assembly fills the core; the mark sits in normal flow. */
+.boot-core > svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: var(--cyan);
+  stroke: var(--accent);
+}
+
+.boot-mark {
+  position: relative;
+  display: block;
+  animation: wordmark-in 1.2s var(--ease-out) both;
+  animation-delay: 0.45s;
+}
+
+.boot-mark svg {
+  display: block;
+  width: 84px;
+  height: 84px;
+  filter: drop-shadow(0 0 16px var(--accent-glow));
 }
 
 .boot-ring {
@@ -75,7 +76,7 @@
   animation:
     ring-draw 1.5s var(--ease-out) both,
     hud-spin 24s linear infinite;
-  filter: drop-shadow(0 0 8px var(--cyan));
+  filter: drop-shadow(0 0 8px var(--accent));
 }
 
 .boot-ring.r1 {
@@ -105,7 +106,7 @@
 }
 
 .boot-spark {
-  fill: var(--cyan);
+  fill: var(--accent);
   stroke: none;
   animation: spark-ignite 1.6s var(--ease-out) both;
   transform-origin: 120px 120px;
@@ -114,27 +115,35 @@
 @keyframes spark-ignite {
   0% {
     transform: scale(0);
-    filter: drop-shadow(0 0 0 var(--cyan));
+    filter: drop-shadow(0 0 0 var(--accent));
   }
   60% {
     transform: scale(7);
-    filter: drop-shadow(0 0 40px var(--cyan));
+    filter: drop-shadow(0 0 40px var(--accent));
   }
   100% {
     transform: scale(2.4);
-    filter: drop-shadow(0 0 18px var(--cyan));
+    filter: drop-shadow(0 0 18px var(--accent));
   }
+}
+
+.boot.is-exiting {
+  opacity: 0;
+  transform: scale(1.08);
+  pointer-events: none;
 }
 
 .boot-wordmark {
   position: relative;
   font-family: var(--display);
   font-size: var(--fs-title);
-  font-weight: 700;
-  letter-spacing: 0.6em;
-  text-indent: 0.6em;
-  color: var(--text);
-  text-shadow: 0 0 30px rgba(77, 232, 255, 0.6);
+  font-weight: 800;
+  letter-spacing: var(--track-cinematic);
+  text-indent: var(--track-cinematic);
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   animation: wordmark-in 1.4s var(--ease-out) both;
   animation-delay: 0.7s;
 }
@@ -155,10 +164,11 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 7px;
-  font-family: var(--mono);
+  gap: 10px;
+  font-family: var(--sans);
   font-size: var(--fs-label);
-  letter-spacing: 0.24em;
+  font-weight: 500;
+  letter-spacing: var(--track-wide);
   color: var(--muted-dim);
 }
 
@@ -174,14 +184,15 @@
 .boot-lines li.is-shown {
   opacity: 1;
   transform: none;
-  color: var(--cyan);
+  color: var(--accent);
 }
 
 .boot-tick {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   border: 1px solid currentColor;
-  transform: rotate(45deg);
+  box-shadow: 0 0 8px currentColor;
 }
 
 .boot-lines li.is-shown .boot-tick {
@@ -191,9 +202,9 @@
 .boot-hint {
   position: absolute;
   bottom: 6vh;
-  font-family: var(--mono);
+  font-family: var(--display);
   font-size: var(--fs-micro);
-  letter-spacing: 0.3em;
+  letter-spacing: var(--track-wide);
   color: var(--muted-dim);
   opacity: 0;
   animation: led-pulse 2.6s var(--ease-breathe) infinite;
@@ -203,132 +214,16 @@
 
 /* ---------- analysis choreography ---------- */
 
-/* A single sweep crossing the whole workstation while the model runs. */
-.screen-sweep {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  pointer-events: none;
-  background: linear-gradient(
-    100deg,
-    transparent 42%,
-    rgba(77, 232, 255, 0.05) 49%,
-    rgba(77, 232, 255, 0.14) 50%,
-    rgba(77, 232, 255, 0.05) 51%,
-    transparent 58%
-  );
-  background-size: 260% 100%;
-  animation: screen-sweep 3.2s var(--ease-breathe) infinite;
+/* Panels pick up the accent while the model is reading them. */
+.shell.is-analyzing .subject-panel,
+.shell.is-analyzing .console {
+  border-color: rgba(77, 155, 255, 0.28);
 }
 
-@keyframes screen-sweep {
-  from {
-    background-position: 160% 0;
-  }
-  to {
-    background-position: -60% 0;
-  }
-}
-
-.workstation.is-analyzing .hud-bg::before {
-  animation-duration: 14s;
-  opacity: 1;
-}
-
-.workstation.is-analyzing .subject-panel,
-.workstation.is-analyzing .core {
-  border-color: var(--line-mid);
-}
-
-/* Panels lean toward the core as it draws data from them. */
-.workstation.is-analyzing .stage-grid > .subject-panel:first-of-type {
-  animation: lean-right 4.4s var(--ease-breathe) infinite;
-}
-
-.workstation.is-analyzing .stage-grid > .subject-panel:last-of-type {
-  animation: lean-left 4.4s var(--ease-breathe) infinite;
-}
-
-@keyframes lean-right {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(5px);
-  }
-}
-
-@keyframes lean-left {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(-5px);
-  }
-}
-
-.workstation.is-analyzing .core {
+.shell.is-analyzing .console {
   box-shadow:
-    0 0 60px rgba(77, 232, 255, 0.08),
-    inset 0 0 80px rgba(77, 232, 255, 0.05);
-}
-
-/* ---------- result reveal ---------- */
-
-.shockwave {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 240px;
-  height: 240px;
-  margin: -120px 0 0 -120px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  animation: shockwave 1.5s var(--ease-out) both;
-}
-
-.shockwave.w2 {
-  animation-delay: 0.16s;
-}
-
-.shockwave.w3 {
-  animation-delay: 0.32s;
-}
-
-@keyframes shockwave {
-  0% {
-    transform: scale(0.35);
-    opacity: 0.85;
-  }
-  100% {
-    transform: scale(3.4);
-    opacity: 0;
-  }
-}
-
-.result-flash {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
-  pointer-events: none;
-  background: radial-gradient(circle at 50% 45%, currentColor, transparent 55%);
-  animation: result-flash 900ms var(--ease-out) both;
-}
-
-@keyframes result-flash {
-  0% {
-    opacity: 0;
-  }
-  18% {
-    opacity: 0.16;
-  }
-  100% {
-    opacity: 0;
-  }
+    0 0 70px rgba(77, 155, 255, 0.1),
+    inset 0 1px 0 rgba(233, 241, 255, 0.08);
 }
 
 /* ---------- education flow ---------- */
@@ -340,9 +235,10 @@
   display: grid;
   grid-template-rows: auto 1fr auto;
   background:
-    radial-gradient(1200px 700px at 50% 0%, rgba(20, 60, 96, 0.35), transparent 60%),
-    rgba(3, 6, 11, 0.94);
-  backdrop-filter: blur(6px);
+    radial-gradient(1200px 700px at 50% 0%, rgba(20, 60, 96, 0.4), transparent 60%),
+    var(--overlay-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   animation: edu-in 620ms var(--ease-out) both;
 }
 
@@ -358,14 +254,15 @@
   align-items: center;
   gap: 18px;
   padding: 18px 28px;
-  border-bottom: 1px solid var(--line);
-  font-family: var(--mono);
+  border-bottom: 1px solid var(--glass-border-mid);
+  font-family: var(--display);
   font-size: var(--fs-label);
-  letter-spacing: 0.26em;
+  font-weight: 600;
+  letter-spacing: var(--track-wide);
 }
 
 .edu-kicker {
-  color: var(--cyan);
+  color: var(--accent);
 }
 
 .edu-count {
@@ -375,11 +272,12 @@
 
 .edu-body {
   display: grid;
-  grid-template-columns: 250px 1fr 380px;
-  gap: 36px;
-  padding: 34px 28px;
-  align-items: start;
+  grid-template-columns: 230px minmax(0, 1fr) minmax(380px, 560px);
+  gap: 40px;
+  padding: 30px 28px;
+  align-items: center;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .edu-rail {
@@ -387,21 +285,31 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 2px;
-  font-family: var(--mono);
+  gap: 4px;
+  font-family: var(--sans);
   font-size: var(--fs-micro);
-  letter-spacing: 0.14em;
+  font-weight: 500;
+  letter-spacing: var(--track-tight);
 }
 
-.edu-rail li {
+.edu-rail button {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 7px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
   color: var(--muted-dim);
   cursor: pointer;
   position: relative;
   transition: color var(--dur-med) var(--ease-soft);
+}
+
+.edu-rail button:hover {
+  color: var(--text);
 }
 
 .edu-rail-node {
@@ -428,17 +336,18 @@
   display: none;
 }
 
-.edu-rail li.is-done {
-  color: rgba(94, 224, 181, 0.7);
+.edu-rail button.is-done {
+  color: var(--ok);
+  opacity: 0.75;
 }
 
-.edu-rail li.is-done .edu-rail-node,
-.edu-rail li.is-active .edu-rail-node {
+.edu-rail button.is-done .edu-rail-node,
+.edu-rail button.is-active .edu-rail-node {
   background: currentColor;
 }
 
-.edu-rail li.is-active {
-  color: var(--cyan);
+.edu-rail button.is-active {
+  color: var(--accent);
 }
 
 .edu-stage {
@@ -447,10 +356,10 @@
 
 .edu-stage h2 {
   margin: 0 0 14px;
-  font-family: var(--cond);
+  font-family: var(--display);
   font-size: var(--fs-title);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--track-wide);
   color: var(--text);
 }
 
@@ -476,9 +385,9 @@
 
 .edu-figures label {
   display: block;
-  font-family: var(--mono);
+  font-family: var(--display);
   font-size: var(--fs-micro);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--track-wide);
   color: var(--muted-dim);
 }
 
@@ -488,15 +397,19 @@
   font-family: var(--display);
   font-size: var(--fs-value);
   font-weight: 500;
-  color: var(--cyan);
+  color: var(--accent);
 }
 
 .edu-visual {
   display: grid;
   place-items: center;
-  padding: 10px;
-  border: 1px solid var(--line);
-  background: rgba(6, 12, 20, 0.5);
+  min-height: min(46vh, 380px);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border-mid);
+  background: var(--glass-surface);
+  /* No backdrop-filter: .edu already blurs the page behind it, so this would
+     only re-blur an image that is uniform anyway. */
   animation: settle-in var(--dur-slow) var(--ease-out) both;
   animation-delay: 120ms;
 }
@@ -505,7 +418,7 @@
   width: 100%;
   height: auto;
   fill: none;
-  stroke: var(--cyan);
+  stroke: var(--accent);
   stroke-width: 1;
 }
 
@@ -513,8 +426,151 @@
   fill: var(--muted-dim);
   stroke: none;
   font-family: var(--mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.1em;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+/* ---------- data-driven diagram parts ---------- */
+
+.edu-axis-label {
+  fill: var(--muted-dim);
+  stroke: none;
+  font-size: 11px;
+}
+
+.edu-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.edu-series-a,
+.edu-series-b {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: trace-in 1400ms var(--ease-out) both;
+}
+
+.edu-series-a {
+  stroke: var(--subject-a);
+}
+
+.edu-series-b {
+  stroke: var(--subject-b);
+  stroke-dasharray: 7 4;
+  animation-delay: 160ms;
+}
+
+@keyframes trace-in {
+  from {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+  }
+}
+
+.edu-adj {
+  fill: rgba(77, 155, 255, 0.06);
+  stroke: none;
+}
+
+.edu-adj.on {
+  fill: var(--accent);
+  animation: adj-in 400ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 3ms);
+}
+
+@keyframes adj-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.edu-fp-a,
+.edu-fp-b {
+  stroke: none;
+  animation: fp-in 700ms var(--ease-out) both;
+}
+
+.edu-fp-a {
+  fill: var(--subject-a);
+}
+
+.edu-fp-b {
+  fill: var(--subject-b);
+}
+
+.edu-key-a {
+  fill: var(--subject-a);
+  font-weight: 600;
+}
+
+.edu-key-b {
+  fill: var(--subject-b);
+  font-weight: 600;
+}
+
+.edu-key-swatch-a {
+  fill: var(--subject-a);
+}
+
+.edu-key-swatch-b {
+  fill: var(--subject-b);
+}
+
+@keyframes fp-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.2);
+  }
+}
+
+.edu-delta {
+  fill: var(--accent-soft);
+  stroke: none;
+}
+
+.edu-delta.hot {
+  fill: var(--mismatch);
+}
+
+.edu-key-swatch-mean {
+  fill: var(--text);
+  stroke: none;
+}
+
+.edu-curve {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  animation: trace-in 1600ms var(--ease-out) both;
+}
+
+/* Dimmer and thinner, so the measured point reads as the subject of the chart
+   and the curve as the backdrop it is. */
+.edu-curve.is-illustrative {
+  stroke: var(--accent-soft);
+  stroke-width: 1.75;
+}
+
+.edu-drop {
+  stroke: var(--muted-dim);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.edu-point {
+  fill: var(--accent-bright);
+  stroke: var(--bg-0);
+  stroke-width: 2;
+  animation: settle-in 500ms var(--ease-out) both;
+  animation-delay: 900ms;
 }
 
 .edu-frame {
@@ -528,6 +584,13 @@
   animation: packet-travel 2.4s linear infinite;
 }
 
+/* Two full dash periods, so the loop has no visible seam. */
+@keyframes packet-travel {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
 .edu-bone {
   opacity: 0.5;
   animation: rise-in 460ms var(--ease-out) both;
@@ -535,7 +598,7 @@
 }
 
 .edu-joint {
-  fill: var(--cyan);
+  fill: var(--accent);
   stroke: none;
   animation: settle-in 420ms var(--ease-out) both;
   animation-delay: calc(200ms + var(--i) * 34ms);
@@ -547,14 +610,16 @@
 }
 
 .edu-origin {
-  fill: var(--cyan);
+  fill: var(--accent);
   stroke: none;
 }
 
 .edu-orbit {
   stroke-dasharray: 60 940;
   animation: hud-spin 6s linear infinite;
-  transform-origin: 110px 70px;
+  /* Must match the circles' centre in CenteringDiagram, or the orbits wobble
+     around an off-centre point instead of rotating in place. */
+  transform-origin: 220px 100px;
 }
 
 .edu-orbit.slow {
@@ -565,14 +630,17 @@
 }
 
 .edu-bar rect {
-  fill: rgba(77, 232, 255, 0.28);
-  stroke: var(--cyan);
+  fill: rgba(77, 155, 255, 0.28);
+  stroke: var(--accent);
   transform-origin: bottom;
-  animation: bar-grow 700ms var(--ease-out) both;
+  animation: bar-grow-y 700ms var(--ease-out) both;
   animation-delay: calc(var(--i) * 80ms);
 }
 
-@keyframes bar-grow {
+/* Keyframe names are global and the last definition wins outright, so this
+   cannot be called bar-grow: it would override the horizontal one in
+   global.css and flip every left-anchored bar in the app onto its side. */
+@keyframes bar-grow-y {
   from {
     transform: scaleY(0);
     opacity: 0;
@@ -580,18 +648,18 @@
 }
 
 .edu-node {
-  fill: var(--cyan);
+  fill: var(--accent);
   stroke: none;
   animation: settle-in 420ms var(--ease-out) both;
   animation-delay: calc(var(--i) * 46ms);
 }
 
 .edu-edge {
-  stroke: rgba(77, 232, 255, 0.16);
+  stroke: rgba(77, 155, 255, 0.16);
 }
 
 .edu-vector {
-  fill: rgba(77, 232, 255, 0.55);
+  fill: rgba(77, 155, 255, 0.55);
   stroke: none;
   transform-origin: left;
   animation: bar-grow 520ms var(--ease-out) both;
@@ -605,11 +673,11 @@
 }
 
 .edu-vector-a {
-  stroke: var(--blue);
+  stroke: var(--accent-bright);
 }
 
 .edu-vector-b {
-  stroke: var(--cyan);
+  stroke: var(--accent);
 }
 
 .edu-angle {
@@ -618,13 +686,8 @@
 }
 
 .edu-figure {
-  fill: var(--cyan);
+  fill: var(--accent);
   font-size: var(--fs-label);
-}
-
-.edu-figure.mark {
-  fill: var(--muted-dim);
-  font-size: var(--fs-micro);
 }
 
 .edu-track {
@@ -633,7 +696,7 @@
 }
 
 .edu-fill {
-  fill: var(--cyan);
+  fill: var(--accent);
   stroke: none;
   transform-origin: left;
   animation: bar-grow 1100ms var(--ease-out) both;
@@ -649,20 +712,22 @@
   align-items: center;
   gap: 24px;
   padding: 16px 28px 22px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .edu-progress {
   flex: 1;
-  height: 2px;
-  background: var(--line);
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
 .edu-progress span {
   display: block;
   height: 100%;
-  background: var(--cyan);
+  border-radius: inherit;
+  background: var(--gradient-progress);
   transform-origin: left;
   animation: edu-progress linear both;
 }
@@ -678,6 +743,12 @@
   to {
     transform: scaleX(1);
   }
+}
+
+.edu-keys {
+  flex: none;
+  font-size: var(--fs-micro);
+  color: var(--muted-dim);
 }
 
 .edu-controls {

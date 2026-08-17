@@ -35,3 +35,7 @@ server/.env
 runs/
 *.pt
 !server/ml/weights/best_gait_verifier.pth
+reference/Project_Book.pdf
+reference/train vs val accuracy.png
+reference/training vs val loss.png
+reference/14715698_3840_2160_60fps.mp4

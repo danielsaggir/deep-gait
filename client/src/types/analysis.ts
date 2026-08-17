@@ -1,11 +1,11 @@
 export const STAGES = [
-  "FOOTAGE INGESTION",
-  "POSE ACQUISITION",
-  "SKELETON NORMALIZATION",
-  "TEMPORAL FEATURE EXTRACTION",
-  "GAIT ENCODING",
-  "BIOMETRIC COMPARISON",
-  "CLASSIFICATION",
+  "Decoding clips",
+  "Extracting pose",
+  "Normalising skeletons",
+  "Building channels",
+  "Encoding signatures",
+  "Fusing the pair",
+  "Scoring",
 ] as const;
 
 export type Phase =

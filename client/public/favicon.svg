@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <!-- Simplified GaitMark: at favicon sizes only the stride reads, so the arms
+       and joint nodes of the full mark are dropped. -->
+  <defs>
+    <linearGradient id="g" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="55%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#7dd3fc" />
+    </linearGradient>
+  </defs>
+  <rect width="40" height="40" rx="9" fill="#04060d" />
+  <circle cx="20" cy="9" r="3.6" fill="none" stroke="url(#g)" stroke-width="3" />
+  <path
+    d="M20 14 V23 M20 23 L27 30 M20 23 L13 30"
+    fill="none"
+    stroke="url(#g)"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path d="M9 34 H31" stroke="#38bdf8" stroke-opacity="0.4" stroke-width="2" stroke-linecap="round" />
+</svg>
