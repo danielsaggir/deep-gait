@@ -32,3 +32,4 @@ webapp/client/dist/
 .env
 webapp/server/.env
 .cursor/DeepGait-PRD.md
+.cursor/DeepGait-Master-Prompt.md
