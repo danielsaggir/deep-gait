@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Stop any process listening on the Express API port so dev:all / run:all can bind.
-# Default port matches webapp/server (see .env PORT=).
+# Stop any process listening on the Express API port so npm run dev can bind.
+# Default port matches server/.env PORT=.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,7 +15,7 @@ if ! command -v lsof >/dev/null 2>&1; then
   exit 0
 fi
 
-ENV_FILE="${ROOT}/webapp/server/.env"
+ENV_FILE="${ROOT}/server/.env"
 PORT=3001
 if [[ -f "$ENV_FILE" ]]; then
   line="$(grep -E '^[[:space:]]*PORT=' "$ENV_FILE" | tail -n1 || true)"
@@ -53,7 +53,7 @@ fi
 
 pids="$(listeners)"
 if [[ -n "$pids" ]]; then
-  echo "[free-api-port] Could not free port ${PORT}; stop the process manually or use another PORT in webapp/server/.env" >&2
+  echo "[free-api-port] Could not free port ${PORT}; stop the process manually or use another PORT in server/.env" >&2
   exit 1
 fi
 

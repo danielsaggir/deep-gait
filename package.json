@@ -1,18 +1,20 @@
 {
-  "name": "deep-gait",
+  "name": "deepgait",
   "private": true,
   "workspaces": [
-    "webapp/server",
-    "webapp/client"
+    "server",
+    "client"
   ],
   "scripts": {
-    "start:server": "npm run start -w deepgait-server",
+    "dev": "bash scripts/dev.sh",
     "dev:server": "npm run dev -w deepgait-server",
     "dev:client": "npm run dev -w deepgait-client",
+    "build": "npm run build -w deepgait-server && npm run build -w deepgait-client",
     "build:client": "npm run build -w deepgait-client",
-    "dev": "bash scripts/dev.sh",
-    "dev:all": "npm run dev",
-    "run:all": "bash scripts/run-all.sh"
+    "build:server": "npm run build -w deepgait-server",
+    "test": "npm run test -w deepgait-server && npm run test -w deepgait-client",
+    "test:python": "python -m pytest tests -q",
+    "lint": "npm run lint -w deepgait-server && npm run lint -w deepgait-client"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

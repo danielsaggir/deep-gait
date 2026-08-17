@@ -9,27 +9,29 @@ dist/
 build/
 
 .DS_Store
-
-# Optional local training plots / exports
 artifacts/
 
 data/raw/*.tar
-# Extracted CASIA tree (see deep_gait.dataset.PROCESSED_SUBDIR)
 data/processed/casia_b_hrnet/
 
-# ML checkpoints (large)
+# Dummy/old checkpoints only. Production weights live under server/ml/weights/.
 models/*.pth
 !models/.gitkeep
 
-# Node (root workspaces + per-app)
 node_modules/
-webapp/server/node_modules/
-webapp/server/uploads/*
-!webapp/server/uploads/.gitkeep
-webapp/client/node_modules/
-webapp/client/dist/
+client/dist/
+server/dist/
+server/tmp/
+uploads/
+*.tsbuildinfo
 
 .env
-webapp/server/.env
+server/.env
+
 .cursor/DeepGait-PRD.md
 .cursor/DeepGait-Master-Prompt.md
+
+# Ultralytics downloads
+runs/
+*.pt
+!server/ml/weights/best_gait_verifier.pth
