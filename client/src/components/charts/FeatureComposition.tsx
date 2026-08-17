@@ -17,17 +17,20 @@ export function FeatureComposition({ values }: Props) {
     ["ACCELERATION", values.acceleration],
   ] as const;
   const max = Math.max(0.0001, ...entries.map(([, v]) => v));
+
   return (
-    <div className="chart">
+    <div className="chart chart-tall">
       <h3>FEATURE COMPOSITION</h3>
-      {entries.map(([label, value]) => (
-        <div key={label} style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 8, marginBottom: 6 }}>
-          <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)" }}>{label}</span>
-          <div style={{ background: "rgba(77,232,255,0.08)", height: 8 }}>
-            <div style={{ width: `${(value / max) * 100}%`, height: "100%", background: "#4de8ff" }} />
+      <div className="feature-bars">
+        {entries.map(([label, value]) => (
+          <div className="feature-row" key={label}>
+            <span className="feature-label">{label}</span>
+            <div className="feature-track">
+              <div className="feature-fill" style={{ width: `${(value / max) * 100}%` }} />
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

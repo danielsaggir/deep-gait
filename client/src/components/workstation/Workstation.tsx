@@ -41,23 +41,36 @@ export function Workstation() {
   const mutedRef = useRef(sessionStorage.getItem("deepgait-muted") === "1");
   const [state, dispatch] = useReducer(workstationReducer, initialState(mutedRef.current));
   const stageTimer = useRef<number | null>(null);
+  const videoARef = useRef<HTMLVideoElement | null>(null);
+  const videoBRef = useRef<HTMLVideoElement | null>(null);
+  const playbackCuePlayed = useRef(false);
   const [booting, setBooting] = useState(true);
   const [debrief, setDebrief] = useState(false);
 
-  // The debrief opens on its own once the reveal has had time to land.
   useEffect(() => {
-    if (state.phase !== "RESULT") {
-      setDebrief(false);
-      return;
-    }
-    const timer = window.setTimeout(() => setDebrief(true), 2600);
-    return () => window.clearTimeout(timer);
-  }, [state.phase]);
+    const unlock = () => audio.resume();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem("deepgait-muted", state.muted ? "1" : "0");
     if (state.muted) audio.silence();
   }, [state.muted]);
+
+  useEffect(() => {
+    if (state.phase !== "RESULT") {
+      playbackCuePlayed.current = false;
+      return;
+    }
+    if (playbackCuePlayed.current) return;
+    playbackCuePlayed.current = true;
+    if (!state.muted) audio.playbackStart();
+  }, [state.phase, state.muted]);
 
   const play = useCallback(
     (fn: () => void) => {
@@ -69,6 +82,15 @@ export function Workstation() {
   const setSubject = (slot: "A" | "B", file: File, objectUrl: string, metadata: VideoMetadata) => {
     play(() => audio.accepted());
     dispatch({ type: "SET_SUBJECT", slot, file, objectUrl, metadata });
+  };
+
+  const replayBoth = () => {
+    [videoARef, videoBRef].forEach((ref) => {
+      const v = ref.current;
+      if (!v) return;
+      v.currentTime = 0;
+      void v.play().catch(() => undefined);
+    });
   };
 
   const analyze = async () => {
@@ -112,8 +134,8 @@ export function Workstation() {
   };
 
   const analysis = state.analysis;
-
   const analyzing = state.phase === "ANALYZING";
+  const isResult = state.phase === "RESULT";
   const match = analysis?.result.verdict === "LIKELY_MATCH";
 
   return (
@@ -128,7 +150,9 @@ export function Workstation() {
           style={{ color: match ? "var(--ok)" : "var(--warn)" }}
         />
       ) : null}
-      <div className={`workstation ${analyzing ? "is-analyzing" : ""}`}>
+      <div
+        className={`workstation ${analyzing ? "is-analyzing" : ""} ${isResult ? "is-result" : ""}`}
+      >
         <Header
           muted={state.muted}
           onToggleMute={() => {
@@ -139,7 +163,7 @@ export function Workstation() {
           <FlowConduit
             chargedA={Boolean(state.subjectA.file)}
             chargedB={Boolean(state.subjectB.file)}
-            flowing={state.phase === "ANALYZING"}
+            flowing={analyzing}
           />
           <SubjectPanel
             label="SUBJECT A"
@@ -147,19 +171,24 @@ export function Workstation() {
             poseFrames={analysis?.subjectA.poseFrames}
             edges={analysis?.subjectA.skeletonEdges}
             overlayEnabled={state.overlayEnabled}
-            scanning={state.phase === "ANALYZING"}
+            scanning={analyzing}
+            playing={isResult}
+            onVideoRef={(el) => {
+              videoARef.current = el;
+            }}
             onSelect={(file, url, meta) => setSubject("A", file, url, meta)}
             onClear={() => dispatch({ type: "CLEAR_SUBJECT", slot: "A" })}
           />
           <AnalysisCore
             phase={state.phase}
             canAnalyze={state.phase === "READY_TO_ANALYZE"}
-            analyzing={state.phase === "ANALYZING"}
+            analyzing={analyzing}
             stageIndex={state.stageIndex}
             analysis={analysis}
             error={state.error}
             onAnalyze={() => void analyze()}
             onReset={() => dispatch({ type: "RESET" })}
+            onDebrief={() => setDebrief(true)}
           />
           <SubjectPanel
             label="SUBJECT B"
@@ -167,7 +196,11 @@ export function Workstation() {
             poseFrames={analysis?.subjectB.poseFrames}
             edges={analysis?.subjectB.skeletonEdges}
             overlayEnabled={state.overlayEnabled}
-            scanning={state.phase === "ANALYZING"}
+            scanning={analyzing}
+            playing={isResult}
+            onVideoRef={(el) => {
+              videoBRef.current = el;
+            }}
             onSelect={(file, url, meta) => setSubject("B", file, url, meta)}
             onClear={() => dispatch({ type: "CLEAR_SUBJECT", slot: "B" })}
           />
@@ -178,6 +211,11 @@ export function Workstation() {
               <div className="bottom-head">
                 <span>ANALYSIS TELEMETRY</span>
                 <div className="bottom-actions">
+                  {isResult ? (
+                    <button type="button" className="ghost active" onClick={replayBoth}>
+                      REPLAY BOTH
+                    </button>
+                  ) : null}
                   <button type="button" className="ghost" onClick={() => setDebrief(true)}>
                     PIPELINE DEBRIEF
                   </button>
@@ -227,7 +265,11 @@ export function Workstation() {
         </HudFrame>
       </div>
       {debrief && analysis ? (
-        <EducationFlow analysis={analysis} onClose={() => setDebrief(false)} />
+        <EducationFlow
+          analysis={analysis}
+          soundEnabled={!state.muted}
+          onClose={() => setDebrief(false)}
+        />
       ) : null}
     </div>
   );

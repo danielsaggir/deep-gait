@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { audio } from "../../audio/engine";
 import { fetchHealth } from "../../services/api";
 
 type Props = {
@@ -6,12 +7,20 @@ type Props = {
   onToggleMute: () => void;
 };
 
+function audioLabel(state: ReturnType<typeof audio.getState>): string {
+  if (state === "unsupported") return "N/A";
+  if (state === "running") return "READY";
+  if (state === "suspended") return "LOCKED";
+  return state.toUpperCase();
+}
+
 export function Header({ muted, onToggleMute }: Props) {
   const [health, setHealth] = useState({
     status: "…",
     modelAvailable: false,
     device: "—",
   });
+  const [audioState, setAudioState] = useState(audio.getState());
 
   useEffect(() => {
     fetchHealth()
@@ -25,7 +34,15 @@ export function Header({ muted, onToggleMute }: Props) {
       .catch(() => setHealth({ status: "OFFLINE", modelAvailable: false, device: "—" }));
   }, []);
 
+  useEffect(() => {
+    const tick = () => setAudioState(audio.getState());
+    tick();
+    const id = window.setInterval(tick, 800);
+    return () => window.clearInterval(id);
+  }, [muted]);
+
   const online = health.status === "OK" && health.modelAvailable;
+  const audioReady = audioState === "running";
 
   return (
     <header className="header">
@@ -60,6 +77,11 @@ export function Header({ muted, onToggleMute }: Props) {
         <div className="sys-item">
           <label>COMPUTE</label>
           <b>{health.device}</b>
+        </div>
+        <div className="sys-item">
+          <span className={`status-led ${audioReady && !muted ? "is-on" : muted ? "" : "is-warn"}`} />
+          <label>AUDIO</label>
+          <b>{muted ? "MUTED" : audioLabel(audioState)}</b>
         </div>
       </div>
 

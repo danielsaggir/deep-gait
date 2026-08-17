@@ -1,8 +1,10 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { audio } from "../../audio/engine";
 import type { AnalysisResult } from "../../types/analysis";
 
 type Props = {
   analysis: AnalysisResult;
+  soundEnabled?: boolean;
   onClose: () => void;
 };
 
@@ -293,10 +295,17 @@ function buildSteps(a: AnalysisResult): Step[] {
   ];
 }
 
-export function EducationFlow({ analysis, onClose }: Props) {
+export function EducationFlow({ analysis, soundEnabled = true, onClose }: Props) {
   const steps = buildSteps(analysis);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    if (index === indexRef.current) return;
+    indexRef.current = index;
+    if (soundEnabled) audio.debriefStep();
+  }, [index, soundEnabled]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

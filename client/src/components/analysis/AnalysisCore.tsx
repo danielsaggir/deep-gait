@@ -11,6 +11,7 @@ type Props = {
   error: ApiError | null;
   onAnalyze: () => void;
   onReset: () => void;
+  onDebrief?: () => void;
 };
 
 export function AnalysisCore({
@@ -22,6 +23,7 @@ export function AnalysisCore({
   error,
   onAnalyze,
   onReset,
+  onDebrief,
 }: Props) {
   const match = analysis?.result.verdict === "LIKELY_MATCH";
   const reactorState = analyzing
@@ -72,6 +74,12 @@ export function AnalysisCore({
           </div>
           <p>{error.message}</p>
         </div>
+      ) : null}
+
+      {phase === "RESULT" && onDebrief ? (
+        <button type="button" className="debrief-cta" onClick={onDebrief}>
+          RUN PIPELINE DEBRIEF
+        </button>
       ) : null}
 
       {phase === "RESULT" || phase === "ERROR" ? (

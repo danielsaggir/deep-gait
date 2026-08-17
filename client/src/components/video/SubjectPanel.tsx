@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { audio } from "../../audio/engine";
 import { HudFrame } from "../hud/HudFrame";
 import type { PoseFrame, SubjectSlot, VideoMetadata } from "../../types/analysis";
 import { SkeletonOverlay } from "./SkeletonOverlay";
@@ -11,6 +12,9 @@ type Props = {
   overlayEnabled: boolean;
   /** Drives the ingest sweep while the model reads this footage. */
   scanning: boolean;
+  /** Auto-play muted loop after classification. */
+  playing: boolean;
+  onVideoRef?: (el: HTMLVideoElement | null) => void;
   onSelect: (file: File, objectUrl: string, metadata: VideoMetadata) => void;
   onClear: () => void;
 };
@@ -28,6 +32,8 @@ export function SubjectPanel({
   edges,
   overlayEnabled,
   scanning,
+  playing,
+  onVideoRef,
   onSelect,
   onClear,
 }: Props) {
@@ -36,6 +42,18 @@ export function SubjectPanel({
   const [dragging, setDragging] = useState(false);
 
   const tracking = Boolean(poseFrames && edges);
+  const skeletonOn = tracking && overlayEnabled;
+  const playback = playing && skeletonOn;
+
+  useEffect(() => {
+    onVideoRef?.(videoEl);
+  }, [videoEl, onVideoRef]);
+
+  useEffect(() => {
+    if (!playing || !videoEl) return;
+    videoEl.currentTime = 0;
+    void videoEl.play().catch(() => undefined);
+  }, [playing, videoEl]);
 
   const onFile = (file: File) => {
     const url = URL.createObjectURL(file);
@@ -53,26 +71,44 @@ export function SubjectPanel({
     };
   };
 
+  const pickFile = (file: File | undefined) => {
+    if (!file) return;
+    audio.resume();
+    onFile(file);
+  };
+
   return (
-    <HudFrame className="subject-panel" active={Boolean(slot.file)}>
+    <HudFrame
+      className={`subject-panel ${playback ? "is-playback" : ""}`}
+      active={Boolean(slot.file)}
+    >
       <div className="panel-head">
         <strong>{label}</strong>
         <span className={`status-led ${slot.file ? "is-on" : ""}`} />
         <span className="panel-state">
-          {scanning
-            ? "INGESTING"
-            : tracking
-              ? "POSE TRACKED"
-              : slot.file
-                ? "FOOTAGE ACQUIRED"
-                : "STANDBY"}
+          {playback
+            ? "PLAYBACK · SKELETON LOCKED"
+            : scanning
+              ? "INGESTING"
+              : skeletonOn
+                ? "POSE TRACKED"
+                : slot.file
+                  ? "FOOTAGE ACQUIRED"
+                  : "STANDBY"}
         </span>
       </div>
 
-      <div className={`video-stage ${tracking && overlayEnabled ? "is-tracking" : ""}`}>
+      <div className={`video-stage ${skeletonOn ? "is-tracking" : ""}`}>
         {slot.objectUrl ? (
           <>
-            <video ref={setVideoEl} src={slot.objectUrl} controls playsInline />
+            <video
+              ref={setVideoEl}
+              src={slot.objectUrl}
+              controls
+              playsInline
+              muted
+              loop
+            />
             {poseFrames && edges ? (
               <SkeletonOverlay
                 video={videoEl}
@@ -95,8 +131,7 @@ export function SubjectPanel({
             onDrop={(e) => {
               e.preventDefault();
               setDragging(false);
-              const file = e.dataTransfer.files?.[0];
-              if (file) onFile(file);
+              pickFile(e.dataTransfer.files?.[0]);
             }}
           >
             <input
@@ -104,10 +139,7 @@ export function SubjectPanel({
               type="file"
               accept="video/*"
               hidden
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onFile(file);
-              }}
+              onChange={(e) => pickFile(e.target.files?.[0])}
             />
             <svg viewBox="0 0 120 120" className="dropzone-mark" aria-hidden="true">
               <circle cx="60" cy="60" r="44" />
@@ -157,10 +189,7 @@ export function SubjectPanel({
               type="file"
               accept="video/*"
               hidden
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onFile(file);
-              }}
+              onChange={(e) => pickFile(e.target.files?.[0])}
             />
           </div>
         </>

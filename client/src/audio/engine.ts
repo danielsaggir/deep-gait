@@ -287,4 +287,22 @@ export const audio = {
   silence(): void {
     stopHum();
   },
+
+  /** Both clips rolling with skeleton overlays after classification. */
+  playbackStart(): void {
+    sweep({ from: 600, to: 2800, duration: 0.45, gain: 0.06 });
+    chime(12, { duration: 0.55, gain: 0.08 });
+    chime(19, { delay: 0.08, duration: 0.45, gain: 0.06, shimmer: false });
+  },
+
+  /** Each debrief step advance. */
+  debriefStep(): void {
+    chime(17, { duration: 0.22, gain: 0.035, shimmer: false });
+  },
+
+  getState(): "unsupported" | AudioContextState {
+    const c = audioChain();
+    if (!c) return "unsupported";
+    return c.ctx.state;
+  },
 };

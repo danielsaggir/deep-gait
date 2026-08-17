@@ -21,6 +21,16 @@
   --cond: "Barlow Condensed", "Barlow", sans-serif;
   --display: "Orbitron", "Barlow Condensed", sans-serif;
 
+  /* Presentation type scale — nothing below 13px */
+  --fs-micro: 13px;
+  --fs-label: 14px;
+  --fs-body: 17px;
+  --fs-value: 28px;
+  --fs-title: 30px;
+  --fs-hero: 64px;
+  --track-tight: 0.14em;
+  --track-wide: 0.22em;
+
   /* Motion. Spatial movement never uses linear; only continuous rotation and
      data flow do, where the animation genuinely represents elapsed time. */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -195,14 +205,14 @@ button {
   margin: 0;
   font-family: var(--display);
   font-weight: 700;
-  letter-spacing: 0.24em;
-  font-size: 19px;
+  letter-spacing: var(--track-tight);
+  font-size: var(--fs-title);
   color: var(--text);
 }
 
 .brand-text > span {
   color: var(--muted-dim);
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.3em;
   font-family: var(--mono);
 }
@@ -212,7 +222,7 @@ button {
   gap: 26px;
   justify-content: center;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.14em;
 }
 
@@ -274,7 +284,7 @@ button {
   border: 1px solid var(--line);
   padding: 6px 14px;
   letter-spacing: 0.16em;
-  font-size: 10px;
+  font-size: var(--fs-label);
   font-family: var(--mono);
   transition: color 0.18s, border-color 0.18s, background 0.18s;
 }
@@ -295,8 +305,8 @@ button {
   color: var(--cyan);
   border: 1px solid var(--line-strong);
   padding: 11px 30px;
-  letter-spacing: 0.24em;
-  font-size: 11px;
+  letter-spacing: var(--track-tight);
+  font-size: var(--fs-label);
   font-family: var(--mono);
   position: relative;
   transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
@@ -338,6 +348,26 @@ button {
 .primary:not(:disabled):hover {
   background: var(--cyan-dim);
   box-shadow: 0 0 24px rgba(77, 232, 255, 0.14);
+}
+
+.debrief-cta {
+  margin-top: 18px;
+  background: transparent;
+  color: var(--cyan);
+  border: 1px solid var(--line-strong);
+  padding: 12px 28px;
+  letter-spacing: var(--track-wide);
+  font-size: var(--fs-label);
+  font-family: var(--mono);
+  animation:
+    rise-in var(--dur-slow) var(--ease-out) both,
+    led-pulse 2.2s var(--ease-breathe) infinite;
+  animation-delay: 680ms, 680ms;
+}
+
+.debrief-cta:hover {
+  background: var(--cyan-dim);
+  box-shadow: 0 0 28px rgba(77, 232, 255, 0.18);
 }
 
 /* ---------- hud frame ---------- */
@@ -397,6 +427,22 @@ button {
   grid-template-columns: minmax(320px, 1fr) minmax(380px, 460px) minmax(320px, 1fr);
   gap: 26px;
   min-height: 0;
+  transition: grid-template-columns var(--dur-slow) var(--ease-out);
+}
+
+.workstation.is-result .stage-grid {
+  grid-template-columns: minmax(360px, 1.15fr) minmax(340px, 380px) minmax(360px, 1.15fr);
+}
+
+.subject-panel.is-playback {
+  box-shadow:
+    0 0 48px rgba(77, 232, 255, 0.1),
+    inset 0 0 32px rgba(77, 232, 255, 0.04);
+}
+
+.subject-panel.is-playback .video-stage {
+  outline: 1px solid var(--line-strong);
+  outline-offset: -1px;
 }
 
 /* ---------- flow conduits ---------- */
@@ -468,7 +514,7 @@ button {
   padding: 11px 16px;
   border-bottom: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.18em;
   color: var(--muted);
 }
@@ -607,14 +653,14 @@ button {
 
 .dropzone b {
   font-family: var(--cond);
-  letter-spacing: 0.24em;
-  font-size: 15px;
+  letter-spacing: var(--track-tight);
+  font-size: var(--fs-body);
   color: var(--cyan);
 }
 
 .dropzone span {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.16em;
 }
 
@@ -627,7 +673,7 @@ button {
   margin: 0;
   padding: 12px 16px 10px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
 }
 
 .meta > div {
@@ -678,7 +724,7 @@ button {
   justify-content: space-between;
   width: 100%;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.2em;
   color: var(--cyan);
   padding-bottom: 10px;
@@ -885,8 +931,8 @@ button {
 .readout-label,
 .readout-sub {
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.24em;
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
   color: var(--muted);
 }
 
@@ -896,7 +942,7 @@ button {
 
 .readout-value {
   font-family: var(--display);
-  font-size: 46px;
+  font-size: var(--fs-hero);
   font-weight: 600;
   line-height: 1.1;
   color: currentColor;
@@ -907,7 +953,7 @@ button {
 
 .readout-idle {
   font-family: var(--cond);
-  font-size: 20px;
+  font-size: var(--fs-title);
   letter-spacing: 0.3em;
   color: var(--muted);
 }
@@ -927,7 +973,7 @@ button {
   gap: 10px;
   font-family: var(--cond);
   letter-spacing: 0.3em;
-  font-size: 19px;
+  font-size: var(--fs-title);
   padding: 6px 18px;
   border: 1px solid currentColor;
   animation: rise-in var(--dur-slow) var(--ease-out) both;
@@ -959,19 +1005,19 @@ button {
   padding: 10px 14px;
   text-align: left;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-label);
 }
 
 .core-error-title {
   color: var(--bad);
   letter-spacing: 0.2em;
-  font-size: 10px;
+  font-size: var(--fs-label);
 }
 
 .core-error-code {
   color: var(--warn);
   letter-spacing: 0.14em;
-  font-size: 9px;
+  font-size: var(--fs-micro);
   margin-top: 2px;
 }
 
@@ -999,7 +1045,7 @@ button {
   align-items: center;
   gap: 8px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.12em;
   color: var(--muted-dim);
   padding: 4px 0;
@@ -1041,7 +1087,7 @@ button {
 }
 
 .stage-status {
-  font-size: 8.5px;
+  font-size: var(--fs-micro);
   opacity: 0.8;
 }
 
@@ -1097,7 +1143,7 @@ button {
   margin-bottom: 12px;
   border-bottom: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.2em;
   color: var(--muted-dim);
 }
@@ -1120,7 +1166,7 @@ button {
 .metric label {
   display: block;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   color: var(--muted-dim);
   letter-spacing: 0.18em;
 }
@@ -1129,7 +1175,7 @@ button {
   display: block;
   margin-top: 4px;
   font-family: var(--display);
-  font-size: 17px;
+  font-size: var(--fs-value);
   color: var(--text);
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -1144,9 +1190,125 @@ button {
 .chart {
   min-height: 124px;
   border: 1px solid var(--line);
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: rgba(6, 12, 20, 0.4);
   animation: rise-in var(--dur-slow) var(--ease-out) both;
+}
+
+.chart-tall {
+  min-height: 168px;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 8px;
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+}
+
+.legend-a {
+  color: var(--cyan);
+}
+
+.legend-a::before,
+.legend-b::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.legend-a::before {
+  background: var(--cyan);
+}
+
+.legend-b {
+  color: var(--blue);
+}
+
+.legend-b::before {
+  background: var(--blue);
+}
+
+.chart-svg .chart-axis {
+  stroke: var(--line-mid);
+  stroke-width: 1;
+}
+
+.chart-svg .chart-axis-label {
+  fill: var(--muted-dim);
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+}
+
+.chart-svg .series-a {
+  stroke: var(--cyan);
+  stroke-width: 2;
+}
+
+.chart-svg .series-b {
+  stroke: var(--blue);
+  stroke-width: 2;
+}
+
+.feature-bars {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.feature-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.feature-label {
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  letter-spacing: var(--track-tight);
+  color: var(--muted);
+}
+
+.feature-track {
+  background: rgba(77, 232, 255, 0.08);
+  height: 12px;
+}
+
+.feature-fill {
+  height: 100%;
+  background: var(--cyan);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.embedding-grid {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.embedding-row-label {
+  font-family: var(--mono);
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+.embedding-strip {
+  display: grid;
+  grid-template-columns: repeat(128, 1fr);
+  height: 22px;
+  gap: 1px;
+}
+
+.embedding-cell {
+  min-width: 0;
 }
 
 /* Charts land after the metrics they elaborate on. */
@@ -1163,7 +1325,7 @@ button {
 .chart h3 {
   margin: 0 0 8px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.2em;
   color: var(--muted-dim);
   font-weight: 500;
@@ -1171,7 +1333,7 @@ button {
 
 .core-label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.28em;
   color: var(--muted-dim);
 }
@@ -1185,7 +1347,7 @@ button {
 .intel summary {
   cursor: pointer;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-label);
   letter-spacing: 0.2em;
   color: var(--muted-dim);
 }
@@ -1200,7 +1362,7 @@ button {
   gap: 8px;
   margin-top: 10px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.1em;
   color: var(--cyan);
   opacity: 0.75;
