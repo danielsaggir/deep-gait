@@ -31,3 +31,4 @@ webapp/client/dist/
 
 .env
 webapp/server/.env
+.cursor/DeepGait-PRD.md
