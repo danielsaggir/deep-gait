@@ -1,17 +1,32 @@
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, type CSSProperties } from "react";
 import { audio } from "../../audio/engine";
 import { workstationReducer, initialState } from "../../hooks/workstationReducer";
 import { runAnalysis } from "../../services/api";
-import type { VideoMetadata } from "../../types/analysis";
+import type { AnalysisResult, VideoMetadata } from "../../types/analysis";
 import { AnalysisCore } from "../analysis/AnalysisCore";
 import { FeatureComposition } from "../charts/FeatureComposition";
 import { EmbeddingCompare } from "../charts/EmbeddingCompare";
 import { GaitSignature } from "../charts/GaitSignature";
+import { FlowConduit } from "../hud/FlowConduit";
 import { HudFrame } from "../hud/HudFrame";
 import { SubjectPanel } from "../video/SubjectPanel";
 import { Header } from "./Header";
 
 const STAGE_MS = 420;
+
+function metricsFor(analysis: AnalysisResult): Array<[string, string]> {
+  const coverage = (s: "subjectA" | "subjectB") =>
+    (analysis[s].poseQuality.coverage * 100).toFixed(0);
+
+  return [
+    ["EMBEDDING COSINE", analysis.result.cosineSimilarity.toFixed(3)],
+    ["DECISION THRESHOLD", analysis.result.threshold.toFixed(3)],
+    ["POSE COVERAGE", `${coverage("subjectA")}% / ${coverage("subjectB")}%`],
+    ["SEQUENCE WINDOW", `${analysis.model.sequenceLength} FRAMES`],
+    ["JOINT MODEL", `${analysis.model.joints} NODES`],
+    ["ANALYSIS TIME", `${analysis.timing.total.toFixed(2)}s`],
+  ];
+}
 
 export function Workstation() {
   const mutedRef = useRef(sessionStorage.getItem("deepgait-muted") === "1");
@@ -20,6 +35,7 @@ export function Workstation() {
 
   useEffect(() => {
     sessionStorage.setItem("deepgait-muted", state.muted ? "1" : "0");
+    if (state.muted) audio.silence();
   }, [state.muted]);
 
   const play = useCallback(
@@ -37,12 +53,13 @@ export function Workstation() {
   const analyze = async () => {
     if (!state.subjectA.file || !state.subjectB.file) return;
     audio.resume();
-    play(() => audio.analyze());
+    play(() => audio.analyzeStart());
     dispatch({ type: "START_ANALYSIS" });
     let stage = 0;
     stageTimer.current = window.setInterval(() => {
       stage = Math.min(stage + 1, 6);
       dispatch({ type: "SET_STAGE", index: stage });
+      play(() => audio.stageAdvance());
       if (stage >= 6 && stageTimer.current) {
         window.clearInterval(stageTimer.current);
         stageTimer.current = null;
@@ -53,6 +70,7 @@ export function Workstation() {
       const result = await runAnalysis(state.subjectA.file, state.subjectB.file);
       const wait = Math.max(0, STAGE_MS * 7 - STAGE_MS);
       await new Promise((r) => setTimeout(r, Math.min(wait, 800)));
+      audio.analyzeEnd();
       dispatch({ type: "ANALYSIS_SUCCESS", analysis: result });
       play(() => (result.result.verdict === "LIKELY_MATCH" ? audio.success() : audio.different()));
     } catch (err) {
@@ -60,9 +78,11 @@ export function Workstation() {
         err && typeof err === "object" && "code" in err
           ? (err as { code: string; message: string; subject?: string })
           : { code: "REQUEST_FAILURE", message: "Analysis request failed." };
+      audio.analyzeEnd();
       dispatch({ type: "ANALYSIS_ERROR", error });
       play(() => audio.failure());
     } finally {
+      audio.analyzeEnd();
       if (stageTimer.current) {
         window.clearInterval(stageTimer.current);
         stageTimer.current = null;
@@ -83,12 +103,18 @@ export function Workstation() {
           }}
         />
         <div className="stage-grid">
+          <FlowConduit
+            chargedA={Boolean(state.subjectA.file)}
+            chargedB={Boolean(state.subjectB.file)}
+            flowing={state.phase === "ANALYZING"}
+          />
           <SubjectPanel
             label="SUBJECT A"
             slot={state.subjectA}
             poseFrames={analysis?.subjectA.poseFrames}
             edges={analysis?.subjectA.skeletonEdges}
             overlayEnabled={state.overlayEnabled}
+            scanning={state.phase === "ANALYZING"}
             onSelect={(file, url, meta) => setSubject("A", file, url, meta)}
             onClear={() => dispatch({ type: "CLEAR_SUBJECT", slot: "A" })}
           />
@@ -108,6 +134,7 @@ export function Workstation() {
             poseFrames={analysis?.subjectB.poseFrames}
             edges={analysis?.subjectB.skeletonEdges}
             overlayEnabled={state.overlayEnabled}
+            scanning={state.phase === "ANALYZING"}
             onSelect={(file, url, meta) => setSubject("B", file, url, meta)}
             onClear={() => dispatch({ type: "CLEAR_SUBJECT", slot: "B" })}
           />
@@ -126,33 +153,12 @@ export function Workstation() {
                 </button>
               </div>
               <div className="metrics">
-                <div className="metric">
-                  <label>EMBEDDING COSINE</label>
-                  <b>{analysis.result.cosineSimilarity.toFixed(3)}</b>
-                </div>
-                <div className="metric">
-                  <label>DECISION THRESHOLD</label>
-                  <b>{analysis.result.threshold.toFixed(3)}</b>
-                </div>
-                <div className="metric">
-                  <label>POSE COVERAGE</label>
-                  <b>
-                    {(analysis.subjectA.poseQuality.coverage * 100).toFixed(0)}% /{" "}
-                    {(analysis.subjectB.poseQuality.coverage * 100).toFixed(0)}%
-                  </b>
-                </div>
-                <div className="metric">
-                  <label>SEQUENCE WINDOW</label>
-                  <b>{analysis.model.sequenceLength} FRAMES</b>
-                </div>
-                <div className="metric">
-                  <label>JOINT MODEL</label>
-                  <b>{analysis.model.joints} NODES</b>
-                </div>
-                <div className="metric">
-                  <label>ANALYSIS TIME</label>
-                  <b>{analysis.timing.total.toFixed(2)}s</b>
-                </div>
+                {metricsFor(analysis).map(([label, value], i) => (
+                  <div className="metric" key={label} style={{ "--i": i } as CSSProperties}>
+                    <label>{label}</label>
+                    <b>{value}</b>
+                  </div>
+                ))}
               </div>
               <div className="charts">
                 <GaitSignature

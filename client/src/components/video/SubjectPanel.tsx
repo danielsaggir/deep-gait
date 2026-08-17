@@ -9,6 +9,8 @@ type Props = {
   poseFrames?: PoseFrame[];
   edges?: Array<[number, number]>;
   overlayEnabled: boolean;
+  /** Drives the ingest sweep while the model reads this footage. */
+  scanning: boolean;
   onSelect: (file: File, objectUrl: string, metadata: VideoMetadata) => void;
   onClear: () => void;
 };
@@ -25,6 +27,7 @@ export function SubjectPanel({
   poseFrames,
   edges,
   overlayEnabled,
+  scanning,
   onSelect,
   onClear,
 }: Props) {
@@ -56,7 +59,13 @@ export function SubjectPanel({
         <strong>{label}</strong>
         <span className={`status-led ${slot.file ? "is-on" : ""}`} />
         <span className="panel-state">
-          {tracking ? "POSE TRACKED" : slot.file ? "FOOTAGE ACQUIRED" : "STANDBY"}
+          {scanning
+            ? "INGESTING"
+            : tracking
+              ? "POSE TRACKED"
+              : slot.file
+                ? "FOOTAGE ACQUIRED"
+                : "STANDBY"}
         </span>
       </div>
 
@@ -73,6 +82,7 @@ export function SubjectPanel({
               />
             ) : null}
             <span className="stage-reticle" aria-hidden="true" />
+            {scanning ? <span className="ingest-sweep" aria-hidden="true" /> : null}
           </>
         ) : (
           <label
