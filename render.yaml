@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: deepgait
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: standard
+    healthCheckPath: /api/health
+    envVars:
+      - key: CHECKPOINT_PATH
+        value: server/ml/weights/best_gait_verifier.pth
+      - key: MAX_UPLOAD_MB
+        value: "80"
+      - key: ANALYSIS_TIMEOUT_MS
+        value: "180000"

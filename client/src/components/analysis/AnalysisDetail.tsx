@@ -57,7 +57,7 @@ function metricsFor(analysis: AnalysisResult): Metric[] {
     {
       label: "Joints tracked",
       value: String(analysis.model.joints),
-      note: "Kept from the 33 BlazePose returns",
+      note: "17-point COCO skeleton from YOLO11-pose",
     },
     {
       label: "Time taken",

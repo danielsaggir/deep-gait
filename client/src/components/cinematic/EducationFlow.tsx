@@ -52,9 +52,9 @@ function buildSteps(a: AnalysisResult): Step[] {
     },
     {
       title: "Finding the body",
-      body: "BlazePose locates the body in every frame and returns 33 landmarks, which are trimmed to the 17 joints that actually carry gait. Fingers and facial detail are dropped. From here the system never sees pixels again — no clothing, no background, no face.",
+      body: "YOLO11-pose locates the body in every frame and returns 17 COCO joints. Fingers and facial detail were never tracked in the first place. From here the system never sees pixels again — no clothing, no background, no face.",
       figures: [
-        ["Joints kept", `${a.model.joints} of 33`],
+        ["Joints tracked", `${a.model.joints}`],
         [
           "Pose coverage",
           `${pct(a.subjectA.poseQuality.coverage)} / ${pct(a.subjectB.poseQuality.coverage)}`,
