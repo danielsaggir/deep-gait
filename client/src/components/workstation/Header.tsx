@@ -17,13 +17,17 @@ export function Header({ muted, onToggleMute }: Props) {
 
   useEffect(() => {
     fetchHealth()
-      .then((h) =>
+      .then((h) => {
+        const ready =
+          h.modelAvailable &&
+          h.pythonAvailable &&
+          (h.status.toLowerCase() === "online" || h.status.toLowerCase() === "ok");
         setHealth({
-          status: h.status.toLowerCase() === "ok" ? "Online" : h.status,
+          status: ready ? "Online" : h.status,
           modelAvailable: h.modelAvailable,
           device: h.device.toUpperCase(),
-        })
-      )
+        });
+      })
       .catch(() => setHealth({ status: "Offline", modelAvailable: false, device: "—" }));
   }, []);
 

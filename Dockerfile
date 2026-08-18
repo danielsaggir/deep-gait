@@ -45,7 +45,8 @@ RUN npm run build:client
 
 # Bake the YOLO11-pose weights into the image (at the exact path pose.py
 # expects) so the first request doesn't pay a cold-start download.
-RUN /app/.venv/bin/python -c "from ultralytics import YOLO; YOLO('/app/server/ml/weights/yolo11n-pose.pt')" || true
+RUN test -f /app/server/ml/weights/yolo11n-pose.pt \
+    || /app/.venv/bin/python -c "from ultralytics import YOLO; YOLO('/app/server/ml/weights/yolo11n-pose.pt')"
 
 ENV PYTHON_BIN=/app/.venv/bin/python
 ENV NODE_ENV=production

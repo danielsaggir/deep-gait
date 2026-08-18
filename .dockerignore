@@ -26,6 +26,7 @@ data/processed/casia_b_hrnet/
 models/*.pth
 runs/
 *.pt
+!server/ml/weights/yolo11n-pose.pt
 
 reference/*.mp4
 reference/*.pdf

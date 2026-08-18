@@ -35,6 +35,7 @@ server/.env
 runs/
 *.pt
 !server/ml/weights/best_gait_verifier.pth
+!server/ml/weights/yolo11n-pose.pt
 reference/Project_Book.pdf
 reference/train vs val accuracy.png
 reference/training vs val loss.png
