@@ -7,7 +7,7 @@ export async function fetchHealth(): Promise<{
   modelAvailable: boolean;
   device: string;
 }> {
-  const res = await fetch("/api/health");
+  const res = await fetch("/api/health/ready");
   if (!res.ok) throw new Error("Health check failed");
   return res.json();
 }

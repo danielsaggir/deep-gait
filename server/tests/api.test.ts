@@ -28,11 +28,20 @@ describe("API", () => {
     runAnalysis.mockReset();
   });
 
-  it("GET /api/health", async () => {
+  it("GET /api/health is fast liveness for Render", async () => {
     const res = await request(app).get("/api/health");
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("ok");
+    expect(res.body.modelAvailable).toBe(true);
+    expect(checkPythonReady).not.toHaveBeenCalled();
+  });
+
+  it("GET /api/health/ready checks the ML stack", async () => {
+    const res = await request(app).get("/api/health/ready");
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("online");
     expect(res.body.modelAvailable).toBe(true);
+    expect(checkPythonReady).toHaveBeenCalled();
   });
 
   it("POST /api/analysis rejects missing files", async () => {
