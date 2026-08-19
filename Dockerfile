@@ -41,7 +41,7 @@ RUN python3 -m venv /app/.venv \
 
 # Now bring in the rest of the source and build the client bundle.
 COPY . .
-RUN npm run build:client
+RUN npm run build:client && npm run build:server
 
 # Bake the YOLO11-pose weights into the image (at the exact path pose.py
 # expects) so the first request doesn't pay a cold-start download.
@@ -53,4 +53,4 @@ ENV NODE_ENV=production
 
 EXPOSE 3001
 
-CMD ["npm", "run", "start", "-w", "deepgait-server"]
+CMD ["node", "server/dist/index.js"]

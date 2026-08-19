@@ -25,16 +25,44 @@ function pythonEnv(): NodeJS.ProcessEnv {
   };
 }
 
-export function checkPythonReady(): Promise<{
+type PythonReadyStatus = {
   pythonAvailable: boolean;
   torchAvailable: boolean;
   modelAvailable: boolean;
   device: string;
-}> {
+};
+
+const READY_CACHE_MS = 60_000;
+const READY_CHECK_TIMEOUT_MS = 8_000;
+
+let readyCache: { at: number; value: PythonReadyStatus } | null = null;
+let readyInflight: Promise<PythonReadyStatus> | null = null;
+
+function unavailableReady(modelAvailable: boolean): PythonReadyStatus {
+  return {
+    pythonAvailable: false,
+    torchAvailable: false,
+    modelAvailable,
+    device: "cpu",
+  };
+}
+
+export function checkPythonReady(): Promise<PythonReadyStatus> {
   const checkpoint = resolveCheckpoint();
   const modelAvailable = fs.existsSync(checkpoint);
 
-  return new Promise((resolve) => {
+  if (readyCache && Date.now() - readyCache.at < READY_CACHE_MS) {
+    return Promise.resolve(readyCache.value);
+  }
+  if (readyInflight) return readyInflight;
+
+  readyInflight = new Promise((resolve) => {
+    const finish = (value: PythonReadyStatus) => {
+      readyCache = { at: Date.now(), value };
+      readyInflight = null;
+      resolve(value);
+    };
+
     const child = spawn(
       PYTHON_BIN,
       [
@@ -51,31 +79,41 @@ export function checkPythonReady(): Promise<{
       ],
       { env: pythonEnv() }
     );
+
     let stdout = "";
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      finish(unavailableReady(modelAvailable));
+    }, READY_CHECK_TIMEOUT_MS);
+
     child.stdout?.on("data", (d) => {
       stdout += d;
     });
     child.on("error", () => {
-      resolve({ pythonAvailable: false, torchAvailable: false, modelAvailable, device: "cpu" });
+      clearTimeout(timer);
+      finish(unavailableReady(modelAvailable));
     });
     child.on("close", (code) => {
+      clearTimeout(timer);
       if (code !== 0) {
-        resolve({ pythonAvailable: false, torchAvailable: false, modelAvailable, device: "cpu" });
+        finish(unavailableReady(modelAvailable));
         return;
       }
       try {
         const parsed = JSON.parse(stdout.trim().split("\n").filter(Boolean).pop() || "{}");
-        resolve({
+        finish({
           pythonAvailable: true,
           torchAvailable: Boolean(parsed.torchAvailable),
           modelAvailable,
           device: parsed.device === "cuda" ? "cuda" : "cpu",
         });
       } catch {
-        resolve({ pythonAvailable: true, torchAvailable: false, modelAvailable, device: "cpu" });
+        finish({ pythonAvailable: true, torchAvailable: false, modelAvailable, device: "cpu" });
       }
     });
   });
+
+  return readyInflight;
 }
 
 const DETAIL_LIMIT = 220;

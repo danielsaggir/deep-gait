@@ -26,7 +26,7 @@ app.use(errorHandler);
 export { app };
 
 if (process.env.VITEST !== "true") {
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.error(`DeepGait API listening on ${PORT}`);
   });
 }
