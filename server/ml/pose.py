@@ -19,10 +19,12 @@ import numpy as np
 
 from ml.constants import (
     CASIA_IMAGE_WIDTH,
+    MAX_INFERENCE_WIDTH,
     MIN_DETECTED_FRAMES,
     MIN_DETECTION_COVERAGE,
     NUM_JOINTS,
     TARGET_FPS,
+    YOLO_IMGSZ,
     YOLO_POSE_WEIGHTS,
 )
 from ml.errors import InsufficientGaitDataError, VideoDecodeError
@@ -94,6 +96,19 @@ def _select_person(
     return boxes[i], keypoints_xy[i], keypoints_conf[i]
 
 
+def _downscale_for_inference(
+    frame: np.ndarray, width: int, height: int
+) -> tuple[np.ndarray, float]:
+    """Return a smaller frame for YOLO and a multiplier back to source pixel coords."""
+    if width <= MAX_INFERENCE_WIDTH:
+        return frame, 1.0
+    ratio = MAX_INFERENCE_WIDTH / float(width)
+    infer_w = MAX_INFERENCE_WIDTH
+    infer_h = max(1, int(round(height * ratio)))
+    resized = cv2.resize(frame, (infer_w, infer_h), interpolation=cv2.INTER_AREA)
+    return resized, width / float(infer_w)
+
+
 def extract_pose_from_video(
     video_path: str | Path,
     *,
@@ -120,9 +135,18 @@ def extract_pose_from_video(
         raise VideoDecodeError(f"Video has invalid dimensions: {path.name}", subject=subject)
 
     yolo = _load_yolo()
-    predict_kwargs = {"verbose": False, "imgsz": 640}
+    predict_kwargs = {"verbose": False, "imgsz": YOLO_IMGSZ}
     if device:
         predict_kwargs["device"] = device
+
+    if width > MAX_INFERENCE_WIDTH:
+        logger.info(
+            "Downscaling %s from %dx%d to max width %d before pose inference",
+            path.name,
+            width,
+            height,
+            MAX_INFERENCE_WIDTH,
+        )
 
     scale = CASIA_IMAGE_WIDTH / float(width)
     target_dt = 1.0 / TARGET_FPS
@@ -145,15 +169,16 @@ def extract_pose_from_video(
             next_t += target_dt
             sampled += 1
 
-            results = yolo.predict(frame, **predict_kwargs)
+            infer_frame, coord_back = _downscale_for_inference(frame, width, height)
+            results = yolo.predict(infer_frame, **predict_kwargs)
             result = results[0]
             boxes_obj = result.boxes
             kps_obj = result.keypoints
 
             selected = None
             if boxes_obj is not None and kps_obj is not None and len(boxes_obj) > 0:
-                boxes = boxes_obj.xyxy.cpu().numpy()
-                xy = kps_obj.xy.cpu().numpy()
+                boxes = boxes_obj.xyxy.cpu().numpy() * coord_back
+                xy = kps_obj.xy.cpu().numpy() * coord_back
                 conf = (
                     kps_obj.conf.cpu().numpy()
                     if kps_obj.conf is not None

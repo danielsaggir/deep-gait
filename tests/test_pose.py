@@ -116,3 +116,55 @@ def test_mocked_detections_scale_and_shape(tmp_path, monkeypatch):
     assert extraction.skeleton[0, 0, 0] == pytest.approx(expected)
     assert extraction.pose_frames[0]["joints"][0]["x"] == pytest.approx(100 / 640)
     assert extraction.pose_frames[0]["timestamp"] >= 0
+
+
+def test_large_video_downscales_before_yolo(tmp_path, monkeypatch):
+    video = tmp_path / "large.mp4"
+    _write_blank_video(video, frames=30, fps=25, size=(2560, 1440))
+
+    xy_arr = np.zeros((1, 17, 2), dtype=np.float32)
+    xy_arr[0, 0] = [64.0, 48.0]
+    boxes_arr = np.array([[40, 30, 120, 180]], dtype=np.float32)
+    conf_arr = np.ones((1, 17), dtype=np.float32)
+    seen_widths: list[int] = []
+
+    class Tensorish:
+        def __init__(self, arr):
+            self._arr = arr
+
+        def cpu(self):
+            return self
+
+        def numpy(self):
+            return self._arr
+
+    class FakeBoxes:
+        def __init__(self):
+            self.xyxy = Tensorish(boxes_arr)
+
+        def __len__(self):
+            return 1
+
+    class FakeKps:
+        def __init__(self):
+            self.xy = Tensorish(xy_arr)
+            self.conf = Tensorish(conf_arr)
+
+    class FakeResult:
+        boxes = FakeBoxes()
+        keypoints = FakeKps()
+
+    class FakeYOLO:
+        def predict(self, frame, **_k):
+            seen_widths.append(frame.shape[1])
+            return [FakeResult()]
+
+    import ml.pose as pose_mod
+
+    monkeypatch.setattr(pose_mod, "_load_yolo", lambda: FakeYOLO())
+    extraction = extract_pose_from_video(video, subject="A")
+    assert seen_widths
+    assert seen_widths[0] == 1280
+    # 64 px at 1280-wide inference → 128 px in 2560-wide source → CASIA scale
+    expected = 128.0 * (CASIA_IMAGE_WIDTH / 2560.0)
+    assert extraction.skeleton[0, 0, 0] == pytest.approx(expected)
