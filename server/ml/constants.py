@@ -13,11 +13,6 @@ DECISION_THRESHOLD = 0.5
 CASIA_IMAGE_WIDTH = 320.0
 TARGET_FPS = 25.0
 
-# Pose inference runs on frames downscaled to this width (aspect ratio kept). Full-resolution
-# decode of 1080p/4K clips dominates RAM; YOLO already uses imgsz=640 internally.
-MAX_INFERENCE_WIDTH = 1280
-YOLO_IMGSZ = 640
-
 MIN_DETECTED_FRAMES = 16
 MIN_DETECTION_COVERAGE = 0.25
 
